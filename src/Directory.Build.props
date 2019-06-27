@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <Description>Adds a way to run WebAssembly to AngleSharp.</Description>
+    <Product>AngleSharp.Wasm</Product>
+    <Version>0.13.0</Version>
+  </PropertyGroup>
+</Project>
