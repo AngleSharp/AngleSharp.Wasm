@@ -1,5 +1,5 @@
 # 0.13.0
 
-Released on Monday, August 26 2019.
+Released on Sunday, June 6 2021.
 
-- Initial release
+- Initial release (placeholder)
