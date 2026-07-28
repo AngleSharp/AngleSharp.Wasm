@@ -1,5 +1,6 @@
 namespace AngleSharp.Wasm;
 
+using System.Collections.Generic;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,7 +22,11 @@ public interface IWasmRuntime : IDisposable
     /// Instantiates a previously compiled WebAssembly module.
     /// </summary>
     /// <param name="compiledModule">The compiled module to instantiate.</param>
+    /// <param name="imports">The host imports to expose during instantiation.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The created module instance.</returns>
-    ValueTask<IWasmInstance> InstantiateAsync(IWasmCompiledModule compiledModule, CancellationToken cancellationToken = default);
+    ValueTask<IWasmInstance> InstantiateAsync(
+        IWasmCompiledModule compiledModule,
+        IEnumerable<WasmImportFunction>? imports = null,
+        CancellationToken cancellationToken = default);
 }

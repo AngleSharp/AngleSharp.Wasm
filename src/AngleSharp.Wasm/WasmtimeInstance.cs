@@ -1,6 +1,7 @@
 namespace AngleSharp.Wasm;
 
 using System;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using Wasmtime;
@@ -38,12 +39,34 @@ public sealed class WasmtimeInstance : IWasmInstance
             throw new InvalidOperationException($"The export '{exportName}' is not a function.");
         }
 
-        if (arguments is { Length: > 0 })
+        var parameters = function.Parameters;
+        var invocationArguments = arguments ?? Array.Empty<object?>();
+
+        if (invocationArguments.Length != parameters.Count)
         {
-            throw new NotSupportedException("Passing function arguments is not implemented yet in this scaffold.");
+            throw new ArgumentException($"Export '{exportName}' expects {parameters.Count} argument(s), but {invocationArguments.Length} were provided.", nameof(arguments));
         }
 
-        var result = function.Invoke();
+        if (invocationArguments.Length == 0)
+        {
+            return ValueTask.FromResult(function.Invoke());
+        }
+
+        var boxedArguments = new ValueBox[invocationArguments.Length];
+
+        for (var i = 0; i < boxedArguments.Length; i++)
+        {
+            boxedArguments[i] = parameters[i] switch
+            {
+                ValueKind.Int32 => (ValueBox)Convert.ToInt32(invocationArguments[i], CultureInfo.InvariantCulture),
+                ValueKind.Int64 => (ValueBox)Convert.ToInt64(invocationArguments[i], CultureInfo.InvariantCulture),
+                ValueKind.Float32 => (ValueBox)Convert.ToSingle(invocationArguments[i], CultureInfo.InvariantCulture),
+                ValueKind.Float64 => (ValueBox)Convert.ToDouble(invocationArguments[i], CultureInfo.InvariantCulture),
+                _ => throw new NotSupportedException($"Unsupported parameter type '{parameters[i]}' on export '{exportName}'."),
+            };
+        }
+
+        var result = function.Invoke(boxedArguments);
         return ValueTask.FromResult(result);
     }
 
