@@ -6,15 +6,17 @@
     <authors>AngleSharp</authors>
     <owners>Florian Rappl</owners>
     <license type="expression">MIT</license>
+    <repository type="git" url="https://github.com/AngleSharp/AngleSharp.Wasm" />
     <projectUrl>https://anglesharp.github.io</projectUrl>
     <icon>logo.png</icon>
+    <readme>README.md</readme>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Adds a way to run WebAssembly to AngleSharp.</description>
-    <releaseNotes>https://github.com/AngleSharp/AngleSharp.Wasm/blob/master/CHANGELOG.md</releaseNotes>
-    <copyright>Copyright 2016-2021, AngleSharp</copyright>
+    <releaseNotes>https://github.com/AngleSharp/AngleSharp.Wasm/blob/main/CHANGELOG.md</releaseNotes>
+    <copyright>Copyright 2016-2026, AngleSharp</copyright>
     <tags>html html5 css css3 dom requester http https wasm web assembly</tags>
     <dependencies>
-      <dependency id="AngleSharp" version="0.14.0" />
+      <dependency id="AngleSharp" version="[1.5,2.0)" />
     </dependencies>
   </metadata>
 </package>

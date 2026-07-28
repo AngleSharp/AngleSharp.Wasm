@@ -2,6 +2,11 @@
   <PropertyGroup>
     <Description>Adds a way to run WebAssembly to AngleSharp.</Description>
     <Product>AngleSharp.Wasm</Product>
-    <Version>0.13.0</Version>
+    <Version>1.0.0</Version>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <SignAssembly>true</SignAssembly>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AssemblyOriginatorKeyFile>Key.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 </Project>
