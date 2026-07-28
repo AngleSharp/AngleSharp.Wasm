@@ -33,7 +33,7 @@ public static class WebAssembly
 
         var runtime = GetOrCreateRuntime(window);
         var module = runtime.CompileAsync(moduleBytes).AsTask().GetAwaiter().GetResult();
-        return new WasmJsModule(runtime, module);
+        return new WasmJsModule(runtime, module, moduleBytes);
     }
 
     /// <summary>
@@ -52,7 +52,7 @@ public static class WebAssembly
 
         var imports = GetImports(window);
         var instance = module.Runtime.InstantiateAsync(module.Module, imports).AsTask().GetAwaiter().GetResult();
-        return new WasmJsInstance(instance);
+        return new WasmJsInstance(instance, module.ExportsMetadata);
     }
 
     private static IWasmRuntime GetOrCreateRuntime(IWindow window) =>

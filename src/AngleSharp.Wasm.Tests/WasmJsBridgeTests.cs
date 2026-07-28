@@ -26,10 +26,19 @@ public sealed class WasmJsBridgeTests
         using var document = await context.OpenNewAsync();
 
         var module = WebAssembly.Compile(context.Current!, moduleBytes);
+        var moduleExports = module.Exports();
+        var moduleImports = module.Imports();
         var instance = WebAssembly.Instantiate(context.Current!, module);
 
         var result = instance.Invoke("answer");
+        var answerExport = instance.Exports["answer"] as WasmJsExportedFunction;
 
         Assert.That(result, Is.EqualTo(42));
+        Assert.That(moduleImports, Is.Empty);
+        Assert.That(moduleExports, Has.Length.EqualTo(1));
+        Assert.That(moduleExports[0].Name, Is.EqualTo("answer"));
+        Assert.That(moduleExports[0].Kind, Is.EqualTo("function"));
+        Assert.That(answerExport, Is.Not.Null);
+        Assert.That(answerExport!.Invoke(), Is.EqualTo(42));
     }
 }
