@@ -1,15 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net8.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <SignAssembly>false</SignAssembly>
     <IsPackable>false</IsPackable>
     <AssemblyName>AngleSharp.Wasm.Tests</AssemblyName>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies> <!-- https://github.com/Tyrrrz/GitHubActionsTestLogger/issues/5 -->
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AngleSharp.Wasm\AngleSharp.Wasm.csproj">
-      <TargetFramework>netstandard2.0</TargetFramework>
-    </ProjectReference>
+    <ProjectReference Include="..\AngleSharp.Wasm\AngleSharp.Wasm.csproj" />
   </ItemGroup>
 
   <ItemGroup>

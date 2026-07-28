@@ -21,6 +21,14 @@ var config = Configuration.Default
 
 This will register everything related for running WebAssembly.
 
+## Runtime Backend
+
+The current default backend uses [Wasmtime](https://github.com/bytecodealliance/wasmtime-dotnet) and targets modern .NET runtimes.
+
+## Target Frameworks
+
+The current package targets `net8.0` and `net10.0`.
+
 ## Features
 
 (tbd)

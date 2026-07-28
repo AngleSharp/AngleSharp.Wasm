@@ -17,6 +17,7 @@
     <tags>html html5 css css3 dom requester http https wasm web assembly</tags>
     <dependencies>
       <dependency id="AngleSharp" version="[1.5,2.0)" />
+      <dependency id="Wasmtime" version="[44.0.0]" />
     </dependencies>
   </metadata>
 </package>

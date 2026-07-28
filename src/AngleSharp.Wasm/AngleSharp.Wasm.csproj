@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyName>AngleSharp.Wasm</AssemblyName>
     <RootNamespace>AngleSharp.Wasm</RootNamespace>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <RepositoryUrl>https://github.com/AngleSharp/AngleSharp.Wasm</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
+    <PackageReference Include="Wasmtime" Version="44.0.0" />
   </ItemGroup>
 
   <ItemGroup>

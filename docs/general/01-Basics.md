@@ -6,9 +6,7 @@ section: "AngleSharp.Wasm"
 
 ## Requirements
 
-AngleSharp.Wasm comes currently in two flavors: on Windows for .NET 4.6 and in general targetting .NET Standard 2.0 platforms.
-
-Most of the features of the library do not require .NET 4.6, which means you could create your own fork and modify it to work with previous versions of the .NET-Framework.
+AngleSharp.Wasm currently targets modern .NET runtimes and is available for .NET 8 and .NET 10.
 
 You need to have AngleSharp installed already. This could be done via NuGet:
 
