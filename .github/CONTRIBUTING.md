@@ -43,7 +43,7 @@ AngleSharp and its libraries uses features from the latest versions of C# (e.g.,
 
 AngleSharp itself does not have dependencies, however, the tests are dependent on NUnit.
 
-The build system of AngleSharp uses NUKE. Bootstrap scripts (build.cmd, build.ps1, and build.sh) are included.
+The build system of AngleSharp uses Fallout. Bootstrap scripts (build.cmd, build.ps1, and build.sh) are included.
 
 ### Code Conventions
 
@@ -120,7 +120,7 @@ The following files should not be edited directly in the current repository, but
 build.ps1
 build.sh
 build.cmd
-nuke/*
+build/*
 LICENSE
 ```
 
