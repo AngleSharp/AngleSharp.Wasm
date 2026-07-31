@@ -6,15 +6,15 @@ section: "AngleSharp.Wasm"
 
 ## Requirements
 
-AngleSharp.Wasm comes currently in two flavors: on Windows for .NET 4.6 and in general targetting .NET Standard 2.0 platforms.
-
-Most of the features of the library do not require .NET 4.6, which means you could create your own fork and modify it to work with previous versions of the .NET-Framework.
+AngleSharp.Wasm currently targets modern .NET runtimes and is available for .NET 8 and .NET 10.
 
 You need to have AngleSharp installed already. This could be done via NuGet:
 
 ```ps1
 Install-Package AngleSharp
 ```
+
+If you want JavaScript-side access to `window.WebAssembly`, you also need a scripting setup (for example, AngleSharp.Js) that discovers exported DOM members from loaded assemblies.
 
 ## Getting AngleSharp.Wasm over NuGet
 
@@ -38,3 +38,51 @@ var config = Configuration.Default
 ```
 
 This will register everything related for running WebAssembly.
+
+## Optional: Register Host Imports
+
+If your Wasm module imports host functions, register import providers:
+
+```cs
+var config = Configuration.Default
+        .WithWasm()
+        .WithWasmImports(context =>
+        {
+                return new[]
+                {
+                        new WasmImportFunction(
+                                moduleName: "host",
+                                functionName: "answer",
+                                parameterTypes: Array.Empty<WasmValueType>(),
+                                resultTypes: new[] { WasmValueType.Int32 },
+                                callback: _ => 41),
+                };
+        });
+```
+
+## What Works Today
+
+- `WithWasm()` registers a default Wasmtime-backed runtime factory.
+- `WithWasmImports(...)` can provide host imports during instantiation.
+- The DOM surface exposes `WebAssembly.compile(...)` and `WebAssembly.instantiate(...)`.
+- `Module` metadata APIs are available:
+    - `exports()`
+    - `imports()`
+    - `customSections(sectionName)`
+- `Instance` supports:
+    - `exports` object access by name
+    - `invoke(exportName, ...args)` helper
+- Export descriptors expose spec-style fields (`name`, `kind`).
+
+## Current Limitations
+
+AngleSharp.Wasm currently implements a pragmatic subset of the WebAssembly JS API.
+
+- Synchronous bridge calls are used (`compile` / `instantiate` are not Promise-based APIs).
+- `WebAssembly.validate(...)`, streaming APIs, and compile options are not implemented.
+- `Instance.exports` function members are wrapper objects requiring `.invoke(...)`.
+- Non-function exports are currently represented as descriptors (`name`, `kind`), not full `Memory` / `Table` / `Global` / `Tag` objects.
+- `customSections(...)` returns payload bytes (`byte[]`) mapped from custom sections.
+- Runtime invocation/import marshaling is currently focused on numeric value kinds (`i32`, `i64`, `f32`, `f64`).
+
+These limitations are intentional for the current release scope and can be evolved incrementally.
