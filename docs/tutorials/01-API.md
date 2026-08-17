@@ -82,6 +82,7 @@ Returns an export entry by name:
 - `WasmJsExportedFunction` for function exports
 - `WasmJsMemory` for memory exports
 - `WasmJsTable` for table exports
+- `WasmJsGlobal` for global exports
 - `WasmJsExportValue` for other non-function exports
 - `null` if no export is found
 
@@ -102,6 +103,10 @@ Provides `buffer`, `read(offset, count)`, `write(offset, bytes)`, and `grow(delt
 ## `WasmJsTable`
 
 Provides `length`, `get(index)`, `set(index, value)`, and `grow(delta, value)`. Function references returned by `get(...)` expose `invoke(...)`.
+
+## `WasmJsGlobal`
+
+Provides a `value` accessor and `valueOf()`. Assigning to an immutable global throws `InvalidOperationException`.
 
 ## `WasmJsExportValue`
 

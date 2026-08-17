@@ -27,6 +27,7 @@ public sealed class WasmJsExports
             "function" => CreateFunction(owner, metadata.Name),
             "table" => CreateTable(owner, metadata.Name),
             "memory" => CreateMemory(owner, metadata.Name),
+            "global" => CreateGlobal(owner, metadata.Name),
             _ => new WasmJsExportValue(metadata.Name, metadata.Kind),
         };
 
@@ -64,6 +65,18 @@ public sealed class WasmJsExports
         var memory = provider.GetMemory(name)
             ?? throw new InvalidOperationException($"The export '{name}' is not a memory.");
         return new WasmJsMemory(memory);
+    }
+
+    private static WasmJsGlobal CreateGlobal(WasmJsInstance owner, string name)
+    {
+        if (owner.Instance is not IWasmGlobalProvider provider)
+        {
+            throw new NotSupportedException("The configured WebAssembly runtime does not support global exports.");
+        }
+
+        var global = provider.GetGlobal(name)
+            ?? throw new InvalidOperationException($"The export '{name}' is not a global.");
+        return new WasmJsGlobal(global);
     }
 
     /// <summary>

@@ -9,7 +9,7 @@ using Wasmtime;
 /// <summary>
 /// Wraps a Wasmtime instance and store.
 /// </summary>
-public sealed class WasmtimeInstance : IWasmInstance, IWasmFunctionProvider, IWasmMemoryProvider, IWasmTableProvider
+public sealed class WasmtimeInstance : IWasmInstance, IWasmFunctionProvider, IWasmGlobalProvider, IWasmMemoryProvider, IWasmTableProvider
 {
     private readonly Store _store;
     private readonly Instance _instance;
@@ -33,6 +33,20 @@ public sealed class WasmtimeInstance : IWasmInstance, IWasmFunctionProvider, IWa
 
         var function = _instance.GetFunction(exportName);
         return function is null ? null : new WasmtimeFunction(function);
+    }
+
+    /// <inheritdoc />
+    public IWasmGlobal? GetGlobal(string exportName)
+    {
+        ThrowIfDisposed();
+
+        if (string.IsNullOrEmpty(exportName))
+        {
+            throw new ArgumentException("Export name must be provided.", nameof(exportName));
+        }
+
+        var global = _instance.GetGlobal(exportName);
+        return global is null ? null : new WasmtimeGlobal(global);
     }
 
     /// <inheritdoc />

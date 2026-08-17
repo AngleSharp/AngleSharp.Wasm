@@ -94,9 +94,10 @@ The current package targets `net8.0` and `net10.0`.
 - Export invocation helpers
     - `instance.Invoke(...)`
     - `WasmJsExportedFunction.Invoke(...)`
-- Exported memory and table access
+- Exported memory, table, and global access
     - memory `buffer`, `read`, `write`, and `grow`
     - table `length`, `get`, `set`, and `grow`
+    - global `value` and `valueOf`
 - Multi-target support for `net8.0` and `net10.0`
 
 ## Current Scope and Limitations
@@ -107,7 +108,7 @@ AngleSharp.Wasm currently provides a practical subset of the WebAssembly JS API.
 - Promise-based namespace operations are not currently exposed.
 - `validate(...)` and streaming APIs are not yet implemented.
 - Compile options such as builtins / imported string constants are not yet implemented.
-- Exported memories and tables have usable object projections; other non-function exports remain descriptors (`name`, `kind`).
+- Exported memories, tables, and globals have usable object projections; other non-function exports remain descriptors (`name`, `kind`).
 
 See [Spec Coverage Matrix](docs/general/02-Spec-Coverage.md) for a section-by-section status overview.
 

@@ -2,6 +2,7 @@
 
 Released on Friday, August 21 2026.
 
+- Added `WebAssembly.Globals` object projection (#8)
 - Added `WebAssembly.Table` object projection (#7)
 - Added `WebAssembly.Memory` object projection (#6)
 

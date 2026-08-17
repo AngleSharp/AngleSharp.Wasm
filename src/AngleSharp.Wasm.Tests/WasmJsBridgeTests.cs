@@ -81,6 +81,35 @@ public sealed class WasmJsBridgeTests
         0x07, 0x0B, 0x01, 0x07, 0x6F, 0x62, 0x6A, 0x65, 0x63, 0x74, 0x73, 0x01, 0x00,
     };
 
+    // (module
+    //   (global $counter (export "counter") (mut i32) (i32.const 42))
+    //   (global (export "constant") f64 (f64.const 1.5))
+    //   (func (export "read_counter") (result i32) global.get $counter))
+    private static readonly byte[] GlobalExportModule =
+    {
+        0x00, 0x61, 0x73, 0x6D,
+        0x01, 0x00, 0x00, 0x00,
+        0x01, 0x05, 0x01, 0x60, 0x00, 0x01, 0x7F,
+        0x03, 0x02, 0x01, 0x00,
+        0x06, 0x12, 0x02,
+        0x7F, 0x01, 0x41, 0x2A, 0x0B,
+        0x7C, 0x00, 0x44, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF8, 0x3F, 0x0B,
+        0x07, 0x25, 0x03,
+        0x07, 0x63, 0x6F, 0x75, 0x6E, 0x74, 0x65, 0x72, 0x03, 0x00,
+        0x08, 0x63, 0x6F, 0x6E, 0x73, 0x74, 0x61, 0x6E, 0x74, 0x03, 0x01,
+        0x0C, 0x72, 0x65, 0x61, 0x64, 0x5F, 0x63, 0x6F, 0x75, 0x6E, 0x74, 0x65, 0x72, 0x00, 0x00,
+        0x0A, 0x06, 0x01, 0x04, 0x00, 0x23, 0x00, 0x0B,
+    };
+
+    // (module (global (export "object") (mut externref) (ref.null extern)))
+    private static readonly byte[] ExternalReferenceGlobalExportModule =
+    {
+        0x00, 0x61, 0x73, 0x6D,
+        0x01, 0x00, 0x00, 0x00,
+        0x06, 0x06, 0x01, 0x6F, 0x01, 0xD0, 0x6F, 0x0B,
+        0x07, 0x0A, 0x01, 0x06, 0x6F, 0x62, 0x6A, 0x65, 0x63, 0x74, 0x03, 0x00,
+    };
+
     // AnswerModule + two custom sections named "meta"
     private static readonly byte[] AnswerModuleWithCustomSections =
     {
@@ -256,6 +285,56 @@ public sealed class WasmJsBridgeTests
         Assert.That(table.Get(0), Is.SameAs(value));
         Assert.That(table.Grow(1, value), Is.EqualTo(1));
         Assert.That(table.Get(1), Is.SameAs(value));
+    }
+
+    [Test]
+    public async Task InstanceExportsExposeGlobalAsLiveGlobalObject()
+    {
+        var config = Configuration.Default.WithWasm();
+        using var context = BrowsingContext.New(config);
+        using var document = await context.OpenNewAsync();
+
+        var module = WebAssembly.Compile(context.Current!, GlobalExportModule);
+        var instance = WebAssembly.Instantiate(context.Current!, module);
+        var counter = instance.Exports["counter"] as WasmJsGlobal;
+        var constant = instance.Exports["constant"] as WasmJsGlobal;
+
+        Assert.That(counter, Is.Not.Null);
+        Assert.That(counter!.Value, Is.EqualTo(42));
+        Assert.That(counter.ValueOf(), Is.EqualTo(42));
+        Assert.That(constant, Is.Not.Null);
+        Assert.That(constant!.Value, Is.EqualTo(1.5));
+
+        counter.Value = 7.0;
+
+        Assert.That(counter.Value, Is.EqualTo(7));
+        Assert.That(instance.Invoke("read_counter"), Is.EqualTo(7));
+        Assert.That(() => constant.Value = 2.0, Throws.InvalidOperationException);
+        Assert.That(constant.Value, Is.EqualTo(1.5));
+    }
+
+    [Test]
+    public async Task GlobalProjectionSupportsExternalReferences()
+    {
+        var config = Configuration.Default.WithWasm();
+        using var context = BrowsingContext.New(config);
+        using var document = await context.OpenNewAsync();
+
+        var module = WebAssembly.Compile(context.Current!, ExternalReferenceGlobalExportModule);
+        var instance = WebAssembly.Instantiate(context.Current!, module);
+        var global = instance.Exports["object"] as WasmJsGlobal;
+        var value = new object();
+
+        Assert.That(global, Is.Not.Null);
+        Assert.That(global!.Value, Is.Null);
+
+        global.Value = value;
+
+        Assert.That(global.Value, Is.SameAs(value));
+
+        global.Value = null;
+
+        Assert.That(global.Value, Is.Null);
     }
 
     [Test]

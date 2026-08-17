@@ -81,7 +81,7 @@ AngleSharp.Wasm currently implements a pragmatic subset of the WebAssembly JS AP
 - Synchronous bridge calls are used (`compile` / `instantiate` are not Promise-based APIs).
 - `WebAssembly.validate(...)`, streaming APIs, and compile options are not implemented.
 - `Instance.exports` function members are wrapper objects requiring `.invoke(...)`.
-- Exported memories and tables have usable object projections; other non-function exports remain descriptors (`name`, `kind`).
+- Exported memories, tables, and globals have usable object projections; other non-function exports remain descriptors (`name`, `kind`).
 - `customSections(...)` returns payload bytes (`byte[]`) mapped from custom sections.
 - Runtime invocation/import marshaling is currently focused on numeric value kinds (`i32`, `i64`, `f32`, `f64`).
 
