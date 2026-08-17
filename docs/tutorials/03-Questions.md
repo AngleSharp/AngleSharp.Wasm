@@ -29,9 +29,9 @@ The current bridge methods are synchronous from the caller perspective.
 
 ## Are `Memory`, `Table`, `Global`, and `Tag` exposed as JS API objects?
 
-Exported memories, tables, and globals have usable object projections. Tag projections expose `type().parameters`, including metadata for re-exported imported tags. Memory, table, and global construction and imports are not yet exposed.
+Exported memories, tables, and globals have usable object projections. Host-created and exported tags expose `type().parameters`, including metadata for re-exported imported tags. Host-created exceptions support `is(tag)` and `getArg(tag, index)`. Memory, table, and global construction and imports are not yet exposed.
 
-Wasmtime 44 does not expose native Tag handles or enable exception modules through its .NET API, so Tag exception operations are not yet available through the default backend.
+Wasmtime 44 does not expose native Tag or Exception handles or enable exception modules through its .NET API, so runtime-thrown Wasm exceptions are not yet projected through the default backend.
 
 ## How do I invoke exported functions?
 
@@ -69,6 +69,6 @@ Current numeric value kinds are supported:
 - No `validate(...)` method yet.
 - No streaming APIs.
 - No compile options support (`builtins`, `importedStringConstants`).
-- Tag exception operations and full `WebAssembly.Exception` interoperability are not yet available.
+- Runtime-thrown Wasm exception interoperability is not yet available.
 
 These limits are expected at this stage and can be expanded in future versions.

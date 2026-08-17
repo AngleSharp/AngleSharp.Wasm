@@ -30,8 +30,8 @@ Status values:
 | Memory object API (`Memory`) | Partial | Exported memories expose `buffer`, `read(offset, count)`, `write(offset, bytes)`, and `grow(delta)`. `buffer` is a current `byte[]` snapshot rather than a live JavaScript `ArrayBuffer`; memory construction and imports are not yet exposed. |
 | Table object API (`Table`) | Partial | Exported `funcref` and `externref` tables expose `length`, `get(index)`, `set(index, value)`, and `grow(delta, value)`. Table construction and imports are not yet exposed. |
 | Global object API (`Global`) | Partial | Exported numeric and reference globals expose a mutable or immutable `value` accessor and `valueOf()`. Global construction and imports are not yet exposed. |
-| Tag object API (`Tag`) | Partial | Tag exports expose `type().parameters`, including re-exported imported tags. Wasmtime 44 does not expose native Tag handles or enable exception modules through its .NET API. |
-| Exception object API (`Exception`) | Not yet | No full JS API exception projection yet. |
+| Tag object API (`Tag`) | Partial | Host-created and exported tags expose `type().parameters`, including re-exported imported tags. Wasmtime 44 does not expose native Tag handles or enable exception modules through its .NET API. |
+| Exception object API (`Exception`) | Partial | Host-created exceptions validate typed payloads and expose `is(tag)` and `getArg(tag, index)`. Runtime-thrown Wasm exceptions cannot be projected through Wasmtime 44. |
 | Error constructors (`CompileError`, `LinkError`, `RuntimeError`) | Not yet | No dedicated namespace error constructor projection yet. |
 | JS String builtins set | Not yet | No compile-option builtin-set wiring yet. |
 
@@ -53,6 +53,7 @@ The current implementation is validated by runtime and bridge tests in the repos
 - exported table access, mutation, and growth
 - exported global access and mutation
 - exported and re-exported tag type metadata
+- host-created exception payload validation and inspection
 - import descriptor extraction
 - export descriptor extraction
 - custom section lookup behavior

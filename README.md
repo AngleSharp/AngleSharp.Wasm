@@ -94,11 +94,12 @@ The current package targets `net8.0` and `net10.0`.
 - Export invocation helpers
     - `instance.Invoke(...)`
     - `WasmJsExportedFunction.Invoke(...)`
-- Exported memory, table, global, and tag access
+- WebAssembly object projections
     - memory `buffer`, `read`, `write`, and `grow`
     - table `length`, `get`, `set`, and `grow`
     - global `value` and `valueOf`
     - tag `type().parameters`
+    - exception `is(tag)` and `getArg(tag, index)`
 - Multi-target support for `net8.0` and `net10.0`
 
 ## Current Scope and Limitations
@@ -110,7 +111,7 @@ AngleSharp.Wasm currently provides a practical subset of the WebAssembly JS API.
 - `validate(...)` and streaming APIs are not yet implemented.
 - Compile options such as builtins / imported string constants are not yet implemented.
 - Exported memories, tables, globals, and tags have object projections; other non-function exports remain descriptors (`name`, `kind`).
-- Wasmtime 44 does not expose native Tag handles or enable exception modules through its .NET API, so Tag exception operations are not yet available.
+- Host-created tags and exceptions are supported. Wasmtime 44 does not expose native Tag or Exception handles or enable exception modules through its .NET API, so runtime-thrown Wasm exceptions are not yet projected.
 
 See [Spec Coverage Matrix](docs/general/02-Spec-Coverage.md) for a section-by-section status overview.
 

@@ -111,7 +111,11 @@ Provides a `value` accessor and `valueOf()`. Assigning to an immutable global th
 
 ## `WasmJsTag`
 
-Provides `type()`, whose descriptor exposes the tag's `parameters` as WebAssembly value type names. Native exception operations are not available through the default Wasmtime 44 backend.
+Can be constructed with an ordered array of WebAssembly value type names. Provides `type()`, whose descriptor exposes the tag's `parameters`.
+
+## `WasmJsException`
+
+Construct with a `WasmJsTag` and matching payload array. Provides `is(tag)` and `getArg(tag, index)` and can be thrown and caught as a .NET exception. Runtime-thrown Wasm exceptions are not available through the default Wasmtime 44 backend.
 
 ## `WasmJsExportValue`
 

@@ -391,6 +391,41 @@ public sealed class WasmJsBridgeTests
     }
 
     [Test]
+    public void ExceptionProjectionValidatesAndExposesTypedPayload()
+    {
+        var tag = new WasmJsTag(new[] { "i32", "f64" });
+        var otherTag = new WasmJsTag(new[] { "i32", "f64" });
+        var payload = new object?[] { 42.0, 1.5 };
+        var exception = new WasmJsException(tag, payload);
+
+        payload[0] = 0;
+
+        Assert.That(exception.Message, Is.EqualTo("wasm exception"));
+        Assert.That(exception.Is(tag), Is.True);
+        Assert.That(exception.Is(otherTag), Is.False);
+        Assert.That(exception.GetArg(tag, 0), Is.EqualTo(42));
+        Assert.That(exception.GetArg(tag, 1), Is.EqualTo(1.5));
+        Assert.That(() => exception.GetArg(otherTag, 0), Throws.ArgumentException);
+        Assert.That(() => exception.GetArg(tag, -1), Throws.TypeOf<ArgumentOutOfRangeException>());
+        Assert.That(() => exception.GetArg(tag, 2), Throws.TypeOf<ArgumentOutOfRangeException>());
+        Assert.That(() => new WasmJsException(tag, new object?[] { 42 }), Throws.ArgumentException);
+        Assert.That(() => new WasmJsException(tag, new object?[] { "invalid", 1.5 }), Throws.ArgumentException);
+        Assert.That(() => new WasmJsTag(new[] { "invalid" }), Throws.ArgumentException);
+    }
+
+    [Test]
+    public void ExceptionProjectionCanBeThrownAndCaught()
+    {
+        var tag = new WasmJsTag(new[] { "i64" });
+        var exception = new WasmJsException(tag, new object?[] { 42L });
+
+        var caught = Assert.Throws<WasmJsException>(() => throw exception);
+
+        Assert.That(caught, Is.SameAs(exception));
+        Assert.That(caught!.GetArg(tag, 0), Is.EqualTo(42L));
+    }
+
+    [Test]
     public async Task ExportedFunctionWrapperSupportsArguments()
     {
         var config = Configuration.Default.WithWasm();
