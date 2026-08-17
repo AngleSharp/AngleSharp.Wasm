@@ -38,6 +38,10 @@ When used with a scripting integration that discovers DOM attributes, the follow
 
 Compiles bytes and returns a `WasmJsModule`.
 
+### `WebAssembly.validate(byte[] moduleBytes)`
+
+Returns whether the bytes form a valid WebAssembly module without instantiating it.
+
 ### `WebAssembly.instantiate(WasmJsModule module)`
 
 Instantiates a compiled module and returns a `WasmJsInstance`.

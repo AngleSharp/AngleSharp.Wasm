@@ -18,6 +18,42 @@ public static class WebAssembly
     private static readonly ConditionalWeakTable<IBrowsingContext, IWasmRuntime> runtimeCache = new ();
 
     /// <summary>
+    /// Determines whether bytes form a valid WebAssembly module.
+    /// </summary>
+    /// <param name="window">The host.</param>
+    /// <param name="moduleBytes">The module bytes.</param>
+    /// <returns>True if the module is valid; otherwise, false.</returns>
+    [DomName("validate")]
+    public static bool Validate(this IWindow window, byte[] moduleBytes)
+    {
+        if (moduleBytes is null)
+        {
+            throw new ArgumentNullException(nameof(moduleBytes));
+        }
+
+        var runtime = GetOrCreateRuntime(window);
+
+        if (runtime is IWasmValidator validator)
+        {
+            return validator.Validate(moduleBytes);
+        }
+
+        try
+        {
+            using var module = runtime.CompileAsync(moduleBytes).AsTask().GetAwaiter().GetResult();
+            return true;
+        }
+        catch (Exception exception) when (exception is ObjectDisposedException or OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Compiles a module and returns a bridge module handle.
     /// </summary>
     /// <param name="window">The host.</param>

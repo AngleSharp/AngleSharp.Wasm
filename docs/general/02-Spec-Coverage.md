@@ -18,7 +18,7 @@ Status values:
 | --- | --- | --- |
 | WebAssembly namespace: `compile(bytes)` | Partial | Exposed as synchronous bridge method `WebAssembly.compile(byte[])`. |
 | WebAssembly namespace: `instantiate(...)` | Partial | Exposed as synchronous bridge method `WebAssembly.instantiate(WasmJsModule)`. |
-| WebAssembly namespace: `validate(bytes)` | Not yet | Not currently exposed. |
+| WebAssembly namespace: `validate(bytes)` | Implemented | Exposed as synchronous `WebAssembly.validate(byte[])`, using native Wasmtime validation or compile-and-dispose fallback for custom runtimes. |
 | WebAssembly namespace: streaming APIs | Not yet | No `instantiateStreaming` / `compileStreaming`. |
 | WebAssembly namespace: compile options | Not yet | No `builtins` / `importedStringConstants` options support yet. |
 | `Module.exports(module)` | Partial | Available as instance method `module.exports()` returning descriptor objects. |
@@ -48,6 +48,7 @@ Status values:
 The current implementation is validated by runtime and bridge tests in the repository, including:
 
 - compile and instantiate flows
+- module validation
 - export invocation
 - exported memory read, write, and growth
 - exported table access, mutation, and growth

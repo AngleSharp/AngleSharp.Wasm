@@ -56,6 +56,15 @@ public sealed class WasmtimeRuntimeTests
     }
 
     [Test]
+    public void CanValidateModuleWithoutCompiling()
+    {
+        using var runtime = new WasmtimeWasmRuntime();
+
+        Assert.That(runtime.Validate(MinimalModule), Is.True);
+        Assert.That(runtime.Validate(Array.Empty<byte>()), Is.False);
+    }
+
+    [Test]
     public async Task CanInvokeExportWithArguments()
     {
         using var runtime = new WasmtimeWasmRuntime();

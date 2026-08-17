@@ -66,7 +66,6 @@ Current numeric value kinds are supported:
 ## What are known limitations today?
 
 - No Promise-based `compile` / `instantiate` bridge methods.
-- No `validate(...)` method yet.
 - No streaming APIs.
 - No compile options support (`builtins`, `importedStringConstants`).
 - Runtime-thrown Wasm exception interoperability is not yet available.

@@ -2,6 +2,7 @@
 
 Released on Friday, August 21 2026.
 
+- Added `WebAssembly.validate` method (#11)
 - Added `WebAssembly.Exception` object projection (#10)
 - Added `WebAssembly.Tag` object projection (#9)
 - Added `WebAssembly.Global` object projection (#8)

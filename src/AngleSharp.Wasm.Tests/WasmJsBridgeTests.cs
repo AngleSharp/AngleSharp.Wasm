@@ -176,6 +176,38 @@ public sealed class WasmJsBridgeTests
     }
 
     [Test]
+    public async Task BridgeValidateReturnsModuleValidity()
+    {
+        var config = Configuration.Default.WithWasm();
+        using var context = BrowsingContext.New(config);
+        using var document = await context.OpenNewAsync();
+        var invalidModule = (byte[])AnswerModule.Clone();
+        invalidModule[^1] = 0xFF;
+
+        Assert.That(WebAssembly.Validate(context.Current!, AnswerModule), Is.True);
+        Assert.That(WebAssembly.Validate(context.Current!, invalidModule), Is.False);
+        Assert.That(WebAssembly.Validate(context.Current!, Array.Empty<byte>()), Is.False);
+        Assert.That(() => WebAssembly.Validate(context.Current!, null!), Throws.ArgumentNullException);
+
+        var module = WebAssembly.Compile(context.Current!, AnswerModule);
+
+        Assert.That(module, Is.Not.Null);
+    }
+
+    [Test]
+    public async Task BridgeValidateFallsBackToCompileForCustomRuntime()
+    {
+        var runtime = new ValidationFallbackRuntime();
+        var config = Configuration.Default.WithWasm(_ => new ValidationFallbackRuntimeFactory(runtime));
+        using var context = BrowsingContext.New(config);
+        using var document = await context.OpenNewAsync();
+
+        Assert.That(WebAssembly.Validate(context.Current!, new byte[] { 1 }), Is.True);
+        Assert.That(runtime.LastModuleDisposed, Is.True);
+        Assert.That(WebAssembly.Validate(context.Current!, Array.Empty<byte>()), Is.False);
+    }
+
+    [Test]
     public async Task ModuleImportsExposeSpecDescriptorFields()
     {
         var config = Configuration.Default.WithWasm();
@@ -567,6 +599,57 @@ public sealed class WasmJsBridgeTests
 
         public void Dispose()
         {
+        }
+    }
+
+    private sealed class ValidationFallbackRuntimeFactory : IWasmRuntimeFactory
+    {
+        private readonly IWasmRuntime _runtime;
+
+        public ValidationFallbackRuntimeFactory(IWasmRuntime runtime)
+        {
+            _runtime = runtime;
+        }
+
+        public IWasmRuntime Create(IBrowsingContext context) => _runtime;
+    }
+
+    private sealed class ValidationFallbackRuntime : IWasmRuntime
+    {
+        public bool LastModuleDisposed { get; private set; }
+
+        public ValueTask<IWasmCompiledModule> CompileAsync(
+            ReadOnlyMemory<byte> moduleBytes,
+            System.Threading.CancellationToken cancellationToken = default)
+        {
+            if (moduleBytes.IsEmpty)
+            {
+                throw new FormatException("Invalid module.");
+            }
+
+            return ValueTask.FromResult<IWasmCompiledModule>(new ValidationFallbackModule(this));
+        }
+
+        public ValueTask<IWasmInstance> InstantiateAsync(
+            IWasmCompiledModule compiledModule,
+            IEnumerable<WasmImportFunction>? imports = null,
+            System.Threading.CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public void Dispose()
+        {
+        }
+
+        private sealed class ValidationFallbackModule : IWasmCompiledModule
+        {
+            private readonly ValidationFallbackRuntime _runtime;
+
+            public ValidationFallbackModule(ValidationFallbackRuntime runtime)
+            {
+                _runtime = runtime;
+            }
+
+            public void Dispose() => _runtime.LastModuleDisposed = true;
         }
     }
 }
