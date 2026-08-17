@@ -24,10 +24,35 @@ public sealed class WasmJsExports
     private static object CreateExport(WasmJsInstance owner, WasmModuleExportDescriptor metadata) =>
         metadata.Kind switch
         {
-            "function" => new WasmJsExportedFunction(owner, metadata.Name),
+            "function" => CreateFunction(owner, metadata.Name),
+            "table" => CreateTable(owner, metadata.Name),
             "memory" => CreateMemory(owner, metadata.Name),
             _ => new WasmJsExportValue(metadata.Name, metadata.Kind),
         };
+
+    private static WasmJsExportedFunction CreateFunction(WasmJsInstance owner, string name)
+    {
+        if (owner.Instance is IWasmFunctionProvider provider)
+        {
+            var function = provider.GetFunction(name)
+                ?? throw new InvalidOperationException($"The export '{name}' is not a function.");
+            return new WasmJsExportedFunction(function);
+        }
+
+        return new WasmJsExportedFunction(owner, name);
+    }
+
+    private static WasmJsTable CreateTable(WasmJsInstance owner, string name)
+    {
+        if (owner.Instance is not IWasmTableProvider provider)
+        {
+            throw new NotSupportedException("The configured WebAssembly runtime does not support table exports.");
+        }
+
+        var table = provider.GetTable(name)
+            ?? throw new InvalidOperationException($"The export '{name}' is not a table.");
+        return new WasmJsTable(table);
+    }
 
     private static WasmJsMemory CreateMemory(WasmJsInstance owner, string name)
     {

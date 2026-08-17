@@ -80,7 +80,9 @@ Invokes an exported function by name.
 Returns an export entry by name:
 
 - `WasmJsExportedFunction` for function exports
-- `WasmJsExportValue` for non-function exports
+- `WasmJsMemory` for memory exports
+- `WasmJsTable` for table exports
+- `WasmJsExportValue` for other non-function exports
 - `null` if no export is found
 
 ### `keys()`
@@ -92,6 +94,14 @@ Returns all export names.
 ### `invoke(params object?[] arguments)`
 
 Invokes the wrapped exported function.
+
+## `WasmJsMemory`
+
+Provides `buffer`, `read(offset, count)`, `write(offset, bytes)`, and `grow(delta)`.
+
+## `WasmJsTable`
+
+Provides `length`, `get(index)`, `set(index, value)`, and `grow(delta, value)`. Function references returned by `get(...)` expose `invoke(...)`.
 
 ## `WasmJsExportValue`
 

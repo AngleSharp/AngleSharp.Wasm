@@ -24,11 +24,11 @@ Status values:
 | `Module.exports(module)` | Partial | Available as instance method `module.exports()` returning descriptor objects. |
 | `Module.imports(module)` | Partial | Available as instance method `module.imports()` returning descriptor objects. |
 | `Module.customSections(module, name)` | Partial | Available as instance method `module.customSections(name)` returning `byte[][]`. |
-| `Instance.exports` | Partial | Available as `instance.exports`, with function and memory wrappers plus descriptor values for other export kinds. |
+| `Instance.exports` | Partial | Available as `instance.exports`, with function, memory, and table wrappers plus descriptor values for other export kinds. |
 | Exported function invocation | Implemented | Supported via `instance.invoke(...)` and `WasmJsExportedFunction.invoke(...)`. |
 | Host import functions | Implemented | Supported via `WithWasmImports(...)` and `WasmImportFunction`. |
 | Memory object API (`Memory`) | Partial | Exported memories expose `buffer`, `read(offset, count)`, `write(offset, bytes)`, and `grow(delta)`. `buffer` is a current `byte[]` snapshot rather than a live JavaScript `ArrayBuffer`; memory construction and imports are not yet exposed. |
-| Table object API (`Table`) | Not yet | No full JS API `Table` object projection yet. |
+| Table object API (`Table`) | Partial | Exported `funcref` and `externref` tables expose `length`, `get(index)`, `set(index, value)`, and `grow(delta, value)`. Table construction and imports are not yet exposed. |
 | Global object API (`Global`) | Not yet | No full JS API `Global` object projection yet. |
 | Tag object API (`Tag`) | Not yet | No full JS API `Tag` object projection yet. |
 | Exception object API (`Exception`) | Not yet | No full JS API exception projection yet. |
@@ -41,7 +41,7 @@ Status values:
 | --- | --- | --- |
 | Runtime backend | Implemented | Uses Wasmtime through the default `WithWasm()` registration. |
 | Invocation numeric value types | Implemented | `i32`, `i64`, `f32`, `f64` are supported for import/export invocation paths. |
-| Extended/reference value kinds | Not yet | Rich reference-type projections are not yet exposed through JS API object wrappers. |
+| Extended/reference value kinds | Partial | Table projections support `funcref` and `externref`; broader reference-type invocation marshaling is not yet exposed. |
 
 ## Test-Backed Behavior
 
@@ -50,6 +50,7 @@ The current implementation is validated by runtime and bridge tests in the repos
 - compile and instantiate flows
 - export invocation
 - exported memory read, write, and growth
+- exported table access, mutation, and growth
 - import descriptor extraction
 - export descriptor extraction
 - custom section lookup behavior

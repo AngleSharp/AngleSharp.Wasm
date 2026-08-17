@@ -54,6 +54,33 @@ public sealed class WasmJsBridgeTests
         0x07, 0x07, 0x01, 0x03, 0x6D, 0x65, 0x6D, 0x02, 0x00,
     };
 
+    // (module
+    //   (func $answer (export "answer") (result i32) i32.const 42)
+    //   (table (export "functions") 1 3 funcref)
+    //   (elem (i32.const 0) $answer))
+    private static readonly byte[] TableExportModule =
+    {
+        0x00, 0x61, 0x73, 0x6D,
+        0x01, 0x00, 0x00, 0x00,
+        0x01, 0x05, 0x01, 0x60, 0x00, 0x01, 0x7F,
+        0x03, 0x02, 0x01, 0x00,
+        0x04, 0x05, 0x01, 0x70, 0x01, 0x01, 0x03,
+        0x07, 0x16, 0x02,
+        0x09, 0x66, 0x75, 0x6E, 0x63, 0x74, 0x69, 0x6F, 0x6E, 0x73, 0x01, 0x00,
+        0x06, 0x61, 0x6E, 0x73, 0x77, 0x65, 0x72, 0x00, 0x00,
+        0x09, 0x07, 0x01, 0x00, 0x41, 0x00, 0x0B, 0x01, 0x00,
+        0x0A, 0x06, 0x01, 0x04, 0x00, 0x41, 0x2A, 0x0B,
+    };
+
+    // (module (table (export "objects") 1 3 externref))
+    private static readonly byte[] ExternalReferenceTableExportModule =
+    {
+        0x00, 0x61, 0x73, 0x6D,
+        0x01, 0x00, 0x00, 0x00,
+        0x04, 0x05, 0x01, 0x6F, 0x01, 0x01, 0x03,
+        0x07, 0x0B, 0x01, 0x07, 0x6F, 0x62, 0x6A, 0x65, 0x63, 0x74, 0x73, 0x01, 0x00,
+    };
+
     // AnswerModule + two custom sections named "meta"
     private static readonly byte[] AnswerModuleWithCustomSections =
     {
@@ -173,6 +200,62 @@ public sealed class WasmJsBridgeTests
         Assert.That(() => memory!.Write(0, null!), Throws.ArgumentNullException);
         Assert.That(() => memory!.Write(65536, new byte[] { 1 }), Throws.TypeOf<ArgumentOutOfRangeException>());
         Assert.That(() => memory!.Grow(-1), Throws.TypeOf<ArgumentOutOfRangeException>());
+    }
+
+    [Test]
+    public async Task InstanceExportsExposeTableAsLiveTableObject()
+    {
+        var config = Configuration.Default.WithWasm();
+        using var context = BrowsingContext.New(config);
+        using var document = await context.OpenNewAsync();
+
+        var module = WebAssembly.Compile(context.Current!, TableExportModule);
+        var instance = WebAssembly.Instantiate(context.Current!, module);
+        var table = instance.Exports["functions"] as WasmJsTable;
+        var exportedFunction = instance.Exports["answer"] as WasmJsExportedFunction;
+
+        Assert.That(table, Is.Not.Null);
+        Assert.That(table!.Length, Is.EqualTo(1));
+
+        var function = table.Get(0) as WasmJsExportedFunction;
+
+        Assert.That(function, Is.Not.Null);
+        Assert.That(function!.Invoke(), Is.EqualTo(42));
+
+        table.Set(0, null);
+
+        Assert.That(table.Get(0), Is.Null);
+
+        table.Set(0, exportedFunction);
+
+        Assert.That(((WasmJsExportedFunction)table.Get(0)!).Invoke(), Is.EqualTo(42));
+        Assert.That(table.Grow(1, function), Is.EqualTo(1));
+        Assert.That(table.Length, Is.EqualTo(2));
+        Assert.That(((WasmJsExportedFunction)table.Get(1)!).Invoke(), Is.EqualTo(42));
+        Assert.That(() => table.Get(2), Throws.TypeOf<ArgumentOutOfRangeException>());
+        Assert.That(() => table.Set(2, null), Throws.TypeOf<ArgumentOutOfRangeException>());
+    }
+
+    [Test]
+    public async Task TableProjectionSupportsExternalReferences()
+    {
+        var config = Configuration.Default.WithWasm();
+        using var context = BrowsingContext.New(config);
+        using var document = await context.OpenNewAsync();
+
+        var module = WebAssembly.Compile(context.Current!, ExternalReferenceTableExportModule);
+        var instance = WebAssembly.Instantiate(context.Current!, module);
+        var table = instance.Exports["objects"] as WasmJsTable;
+        var value = new object();
+
+        Assert.That(table, Is.Not.Null);
+        Assert.That(table!.Get(0), Is.Null);
+
+        table.Set(0, value);
+
+        Assert.That(table.Get(0), Is.SameAs(value));
+        Assert.That(table.Grow(1, value), Is.EqualTo(1));
+        Assert.That(table.Get(1), Is.SameAs(value));
     }
 
     [Test]

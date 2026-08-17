@@ -27,9 +27,9 @@ Yes, when used with a scripting integration that discovers DOM-annotated members
 
 The current bridge methods are synchronous from the caller perspective.
 
-## Are `Memory`, `Table`, `Global`, and `Tag` exposed as full JS API objects?
+## Are `Memory`, `Table`, `Global`, and `Tag` exposed as JS API objects?
 
-Not yet. Non-function exports currently appear as `WasmJsExportValue` descriptors (`name`, `kind`).
+Exported memories and tables have usable object projections. Globals and tags currently appear as `WasmJsExportValue` descriptors (`name`, `kind`). Memory and table construction and imports are not yet exposed.
 
 ## How do I invoke exported functions?
 
@@ -67,6 +67,6 @@ Current numeric value kinds are supported:
 - No `validate(...)` method yet.
 - No streaming APIs.
 - No compile options support (`builtins`, `importedStringConstants`).
-- Non-function exports are descriptors instead of full JS API objects.
+- Globals, tags, and other non-function exports remain descriptors instead of full JS API objects.
 
 These limits are expected at this stage and can be expanded in future versions.
