@@ -1,6 +1,7 @@
 namespace AngleSharp.Wasm.Dom;
 
 using AngleSharp.Attributes;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -33,7 +34,16 @@ public sealed class WasmJsInstance
     /// <param name="arguments">The invocation arguments.</param>
     /// <returns>The invocation result.</returns>
     [DomName("invoke")]
-    public object? Invoke(string exportName, params object?[] arguments) =>
-        Instance.InvokeAsync(exportName, arguments).AsTask().GetAwaiter().GetResult();
+    public object? Invoke(string exportName, params object?[] arguments)
+    {
+        try
+        {
+            return Instance.InvokeAsync(exportName, arguments).AsTask().GetAwaiter().GetResult();
+        }
+        catch (Exception exception) when (WebAssembly.ShouldTranslateOperationFailure(exception))
+        {
+            throw new WasmJsRuntimeError(exception.Message, exception);
+        }
+    }
 }
 

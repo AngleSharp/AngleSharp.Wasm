@@ -144,6 +144,10 @@ Can be constructed with an ordered array of WebAssembly value type names. Provid
 
 Construct with a `WasmJsTag` and matching payload array. Provides `is(tag)` and `getArg(tag, index)` and can be thrown and caught as a .NET exception. Runtime-thrown Wasm exceptions are not available through the default Wasmtime 44 backend.
 
+## Error Constructors
+
+`WasmJsCompileError`, `WasmJsLinkError`, and `WasmJsRuntimeError` expose the standard `CompileError`, `LinkError`, and `RuntimeError` DOM names. Each can be constructed with an optional message. Bridge compilation, linking, and execution failures are translated automatically.
+
 ## `WasmJsExportValue`
 
 Descriptor type for non-function exports.

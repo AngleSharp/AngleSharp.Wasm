@@ -1,6 +1,7 @@
 namespace AngleSharp.Wasm.Dom;
 
 using AngleSharp.Attributes;
+using System;
 
 /// <summary>
 /// JavaScript-visible exported function wrapper.
@@ -31,6 +32,15 @@ public sealed class WasmJsExportedFunction
     /// <param name="arguments">The function arguments.</param>
     /// <returns>The invocation result.</returns>
     [DomName("invoke")]
-    public object? Invoke(params object?[] arguments) =>
-        _function is not null ? _function.Invoke(arguments) : _owner!.Invoke(_name!, arguments);
+    public object? Invoke(params object?[] arguments)
+    {
+        try
+        {
+            return _function is not null ? _function.Invoke(arguments) : _owner!.Invoke(_name!, arguments);
+        }
+        catch (Exception exception) when (WebAssembly.ShouldTranslateOperationFailure(exception))
+        {
+            throw new WasmJsRuntimeError(exception.Message, exception);
+        }
+    }
 }

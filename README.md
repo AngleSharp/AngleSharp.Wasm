@@ -103,6 +103,7 @@ The current package targets `net8.0` and `net10.0`.
     - global `value` and `valueOf`
     - tag `type().parameters`
     - exception `is(tag)` and `getArg(tag, index)`
+    - `CompileError`, `LinkError`, and `RuntimeError`
 - Multi-target support for `net8.0` and `net10.0`
 
 ## Current Scope and Limitations

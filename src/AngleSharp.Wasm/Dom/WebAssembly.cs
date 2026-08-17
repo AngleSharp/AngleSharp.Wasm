@@ -162,21 +162,28 @@ public static class WebAssembly
         var compileOptions = options?.Snapshot();
         IWasmCompiledModule module;
 
-        if (compileOptions is not null && runtime is IWasmCompileOptionsCompiler compiler)
+        try
         {
-            module = compiler.CompileAsync(moduleBytes, compileOptions).AsTask().GetAwaiter().GetResult();
-        }
-        else
-        {
-            if (compileOptions?.HasFeatures == true)
+            if (compileOptions is not null && runtime is IWasmCompileOptionsCompiler compiler)
             {
-                throw new NotSupportedException("The configured WebAssembly runtime does not support compile options.");
+                module = compiler.CompileAsync(moduleBytes, compileOptions).AsTask().GetAwaiter().GetResult();
+            }
+            else
+            {
+                if (compileOptions?.HasFeatures == true)
+                {
+                    throw new NotSupportedException("The configured WebAssembly runtime does not support compile options.");
+                }
+
+                module = runtime.CompileAsync(moduleBytes).AsTask().GetAwaiter().GetResult();
             }
 
-            module = runtime.CompileAsync(moduleBytes).AsTask().GetAwaiter().GetResult();
+            return new WasmJsModule(runtime, module, moduleBytes);
         }
-
-        return new WasmJsModule(runtime, module, moduleBytes);
+        catch (Exception exception) when (ShouldTranslateCompileFailure(exception))
+        {
+            throw new WasmJsCompileError(exception.Message, exception);
+        }
     }
 
     /// <summary>
@@ -193,9 +200,16 @@ public static class WebAssembly
             throw new ArgumentNullException(nameof(module));
         }
 
-        var imports = GetImports(window);
-        var instance = module.Runtime.InstantiateAsync(module.Module, imports).AsTask().GetAwaiter().GetResult();
-        return new WasmJsInstance(instance, module.ExportsMetadata);
+        try
+        {
+            var imports = GetImports(window);
+            var instance = module.Runtime.InstantiateAsync(module.Module, imports).AsTask().GetAwaiter().GetResult();
+            return new WasmJsInstance(instance, module.ExportsMetadata);
+        }
+        catch (Exception exception) when (ShouldTranslateOperationFailure(exception))
+        {
+            throw new WasmJsLinkError(exception.Message, exception);
+        }
     }
 
     private static IWasmRuntime GetOrCreateRuntime(IWindow window) =>
@@ -240,5 +254,13 @@ public static class WebAssembly
         source.Content.CopyTo(buffer);
         return buffer.ToArray();
     }
+
+    internal static bool ShouldTranslateOperationFailure(Exception exception) => exception is not
+        (ArgumentException or NotSupportedException or ObjectDisposedException or OperationCanceledException or
+        WasmJsCompileError or WasmJsLinkError or WasmJsRuntimeError);
+
+    private static bool ShouldTranslateCompileFailure(Exception exception) => exception is not
+        (NotSupportedException or ObjectDisposedException or OperationCanceledException or
+        WasmJsCompileError or WasmJsLinkError or WasmJsRuntimeError);
 }
 

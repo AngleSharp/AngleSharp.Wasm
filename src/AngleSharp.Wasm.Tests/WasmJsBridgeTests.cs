@@ -139,6 +139,17 @@ public sealed class WasmJsBridgeTests
         0x07, 0x07, 0x01, 0x03, 0x74, 0x61, 0x67, 0x04, 0x00,
     };
 
+    // (module (func (export "fail") unreachable))
+    private static readonly byte[] TrapModule =
+    {
+        0x00, 0x61, 0x73, 0x6D,
+        0x01, 0x00, 0x00, 0x00,
+        0x01, 0x04, 0x01, 0x60, 0x00, 0x00,
+        0x03, 0x02, 0x01, 0x00,
+        0x07, 0x08, 0x01, 0x04, 0x66, 0x61, 0x69, 0x6C, 0x00, 0x00,
+        0x0A, 0x05, 0x01, 0x03, 0x00, 0x00, 0x0B,
+    };
+
     // AnswerModule + two custom sections named "meta"
     private static readonly byte[] AnswerModuleWithCustomSections =
     {
@@ -176,6 +187,47 @@ public sealed class WasmJsBridgeTests
         Assert.That(answerExport!.Invoke(), Is.EqualTo(42));
         Assert.That(missingExport, Is.Null);
         Assert.That(exportKeys, Is.EquivalentTo(new[] { "answer" }));
+    }
+
+    [Test]
+    public async Task BridgeTranslatesCompileLinkAndRuntimeFailures()
+    {
+        var config = Configuration.Default.WithWasm();
+        using var context = BrowsingContext.New(config);
+        using var document = await context.OpenNewAsync();
+
+        var compileError = Assert.Throws<WasmJsCompileError>(() =>
+            WebAssembly.Compile(context.Current!, new byte[] { 0, 1, 2, 3 }));
+
+        Assert.That(compileError!.Name, Is.EqualTo("CompileError"));
+        Assert.That(compileError.InnerException, Is.Not.Null);
+
+        var importModule = WebAssembly.Compile(context.Current!, HostImportModule);
+        var linkError = Assert.Throws<WasmJsLinkError>(() =>
+            WebAssembly.Instantiate(context.Current!, importModule));
+
+        Assert.That(linkError!.Name, Is.EqualTo("LinkError"));
+        Assert.That(linkError.InnerException, Is.Not.Null);
+
+        var trapModule = WebAssembly.Compile(context.Current!, TrapModule);
+        var trapInstance = WebAssembly.Instantiate(context.Current!, trapModule);
+        var runtimeError = Assert.Throws<WasmJsRuntimeError>(() => trapInstance.Invoke("fail"));
+        var fail = (WasmJsExportedFunction)trapInstance.Exports["fail"]!;
+
+        Assert.That(runtimeError!.Name, Is.EqualTo("RuntimeError"));
+        Assert.That(runtimeError.InnerException, Is.Not.Null);
+        Assert.That(() => fail.Invoke(), Throws.TypeOf<WasmJsRuntimeError>());
+    }
+
+    [Test]
+    public void ErrorConstructorsPreserveMessages()
+    {
+        Assert.That(new WasmJsCompileError().Message, Is.Empty);
+        Assert.That(new WasmJsLinkError().Message, Is.Empty);
+        Assert.That(new WasmJsRuntimeError().Message, Is.Empty);
+        Assert.That(new WasmJsCompileError("compile").Message, Is.EqualTo("compile"));
+        Assert.That(new WasmJsLinkError("link").Message, Is.EqualTo("link"));
+        Assert.That(new WasmJsRuntimeError("runtime").Message, Is.EqualTo("runtime"));
     }
 
     [Test]

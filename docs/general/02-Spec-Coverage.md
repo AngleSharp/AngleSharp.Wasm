@@ -32,7 +32,7 @@ Status values:
 | Global object API (`Global`) | Partial | Exported numeric and reference globals expose a mutable or immutable `value` accessor and `valueOf()`. Global construction and imports are not yet exposed. |
 | Tag object API (`Tag`) | Partial | Host-created and exported tags expose `type().parameters`, including re-exported imported tags. Wasmtime 44 does not expose native Tag handles or enable exception modules through its .NET API. |
 | Exception object API (`Exception`) | Partial | Host-created exceptions validate typed payloads and expose `is(tag)` and `getArg(tag, index)`. Runtime-thrown Wasm exceptions cannot be projected through Wasmtime 44. |
-| Error constructors (`CompileError`, `LinkError`, `RuntimeError`) | Not yet | No dedicated namespace error constructor projection yet. |
+| Error constructors (`CompileError`, `LinkError`, `RuntimeError`) | Implemented | Public DOM-named constructors are available, and compile, instantiate/link, and execution failures are translated at bridge boundaries. |
 | JS String builtins set | Partial | The `js-string` builtin set is recognized and forwarded to capable custom runtimes; Wasmtime 44 has no corresponding API. |
 
 ## Runtime and Type Support
@@ -57,6 +57,7 @@ The current implementation is validated by runtime and bridge tests in the repos
 - exported global access and mutation
 - exported and re-exported tag type metadata
 - host-created exception payload validation and inspection
+- compile, link, and runtime error translation
 - import descriptor extraction
 - export descriptor extraction
 - custom section lookup behavior
