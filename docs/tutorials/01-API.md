@@ -83,6 +83,7 @@ Returns an export entry by name:
 - `WasmJsMemory` for memory exports
 - `WasmJsTable` for table exports
 - `WasmJsGlobal` for global exports
+- `WasmJsTag` for tag exports
 - `WasmJsExportValue` for other non-function exports
 - `null` if no export is found
 
@@ -107,6 +108,10 @@ Provides `length`, `get(index)`, `set(index, value)`, and `grow(delta, value)`. 
 ## `WasmJsGlobal`
 
 Provides a `value` accessor and `valueOf()`. Assigning to an immutable global throws `InvalidOperationException`.
+
+## `WasmJsTag`
+
+Provides `type()`, whose descriptor exposes the tag's `parameters` as WebAssembly value type names. Native exception operations are not available through the default Wasmtime 44 backend.
 
 ## `WasmJsExportValue`
 

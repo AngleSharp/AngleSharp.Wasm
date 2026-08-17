@@ -3,7 +3,9 @@ namespace AngleSharp.Wasm.Tests;
 using AngleSharp.Wasm.Dom;
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 [TestFixture]
@@ -108,6 +110,30 @@ public sealed class WasmJsBridgeTests
         0x01, 0x00, 0x00, 0x00,
         0x06, 0x06, 0x01, 0x6F, 0x01, 0xD0, 0x6F, 0x0B,
         0x07, 0x0A, 0x01, 0x06, 0x6F, 0x62, 0x6A, 0x65, 0x63, 0x74, 0x03, 0x00,
+    };
+
+    // (module (tag (export "error") (export "alias") (param i32 f64)))
+    private static readonly byte[] TagExportModule =
+    {
+        0x00, 0x61, 0x73, 0x6D,
+        0x01, 0x00, 0x00, 0x00,
+        0x01, 0x06, 0x01, 0x60, 0x02, 0x7F, 0x7C, 0x00,
+        0x0D, 0x03, 0x01, 0x00, 0x00,
+        0x07, 0x11, 0x02,
+        0x05, 0x65, 0x72, 0x72, 0x6F, 0x72, 0x04, 0x00,
+        0x05, 0x61, 0x6C, 0x69, 0x61, 0x73, 0x04, 0x00,
+    };
+
+    // (module
+    //   (import "host" "tag" (tag (param i64)))
+    //   (export "tag" (tag 0)))
+    private static readonly byte[] ImportedTagExportModule =
+    {
+        0x00, 0x61, 0x73, 0x6D,
+        0x01, 0x00, 0x00, 0x00,
+        0x01, 0x05, 0x01, 0x60, 0x01, 0x7E, 0x00,
+        0x02, 0x0D, 0x01, 0x04, 0x68, 0x6F, 0x73, 0x74, 0x03, 0x74, 0x61, 0x67, 0x04, 0x00, 0x00,
+        0x07, 0x07, 0x01, 0x03, 0x74, 0x61, 0x67, 0x04, 0x00,
     };
 
     // AnswerModule + two custom sections named "meta"
@@ -338,6 +364,33 @@ public sealed class WasmJsBridgeTests
     }
 
     [Test]
+    public void InstanceExportsExposeTagTypeMetadata()
+    {
+        using var instance = CreateMetadataOnlyInstance(TagExportModule);
+        var tag = instance.Exports["error"] as WasmJsTag;
+        var alias = instance.Exports["alias"] as WasmJsTag;
+
+        Assert.That(tag, Is.Not.Null);
+        Assert.That(tag!.Type().Parameters, Is.EqualTo(new[] { "i32", "f64" }));
+        Assert.That(alias, Is.SameAs(tag));
+
+        var parameters = tag.Type().Parameters;
+        parameters[0] = "changed";
+
+        Assert.That(tag.Type().Parameters, Is.EqualTo(new[] { "i32", "f64" }));
+    }
+
+    [Test]
+    public void ReExportedImportedTagRetainsTypeMetadata()
+    {
+        using var instance = CreateMetadataOnlyInstance(ImportedTagExportModule);
+        var tag = instance.Exports["tag"] as WasmJsTag;
+
+        Assert.That(tag, Is.Not.Null);
+        Assert.That(tag!.Type().Parameters, Is.EqualTo(new[] { "i64" }));
+    }
+
+    [Test]
     public async Task ExportedFunctionWrapperSupportsArguments()
     {
         var config = Configuration.Default.WithWasm();
@@ -434,5 +487,51 @@ public sealed class WasmJsBridgeTests
         using var document = await context.OpenNewAsync();
 
         Assert.That(() => WebAssembly.Compile(context.Current!, AnswerModule), Throws.InvalidOperationException);
+    }
+
+    private static MetadataOnlyInstanceScope CreateMetadataOnlyInstance(byte[] moduleBytes)
+    {
+        var metadataType = typeof(WasmJsModule).Assembly.GetType("AngleSharp.Wasm.Dom.WasmModuleMetadata")!;
+        var parse = metadataType.GetMethod("Parse", BindingFlags.Public | BindingFlags.Static)!;
+        var metadata = parse.Invoke(null, new object[] { moduleBytes })!;
+        var exports = (IReadOnlyList<WasmModuleExportDescriptor>)metadataType
+            .GetProperty("Exports", BindingFlags.Public | BindingFlags.Instance)!
+            .GetValue(metadata)!;
+        var runtimeInstance = new MetadataOnlyInstance();
+        var instance = (WasmJsInstance)Activator.CreateInstance(
+            typeof(WasmJsInstance),
+            BindingFlags.NonPublic | BindingFlags.Instance,
+            null,
+            new object[] { runtimeInstance, exports },
+            null)!;
+        return new MetadataOnlyInstanceScope(runtimeInstance, instance);
+    }
+
+    private sealed class MetadataOnlyInstanceScope : IDisposable
+    {
+        private readonly MetadataOnlyInstance _runtimeInstance;
+
+        public MetadataOnlyInstanceScope(MetadataOnlyInstance runtimeInstance, WasmJsInstance instance)
+        {
+            _runtimeInstance = runtimeInstance;
+            Exports = instance.Exports;
+        }
+
+        public WasmJsExports Exports { get; }
+
+        public void Dispose() => _runtimeInstance.Dispose();
+    }
+
+    private sealed class MetadataOnlyInstance : IWasmInstance
+    {
+        public ValueTask<object?> InvokeAsync(
+            string exportName,
+            object?[]? arguments = null,
+            System.Threading.CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public void Dispose()
+        {
+        }
     }
 }

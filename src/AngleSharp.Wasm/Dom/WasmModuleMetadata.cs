@@ -43,6 +43,8 @@ internal sealed class WasmModuleMetadata
         var imports = new List<WasmModuleImportDescriptor>();
         var exports = new List<WasmModuleExportDescriptor>();
         var customSections = new List<WasmCustomSectionDescriptor>();
+        var functionTypes = new List<string[]>();
+        var tagTypes = new List<uint>();
 
         var offset = 8;
 
@@ -62,11 +64,17 @@ internal sealed class WasmModuleMetadata
                 case 0:
                     ParseCustomSection(bytes, ref offset, sectionEnd, customSections);
                     break;
+                case 1:
+                    ParseTypeSection(bytes, ref offset, sectionEnd, functionTypes);
+                    break;
                 case 2:
-                    ParseImportSection(bytes, ref offset, sectionEnd, imports);
+                    ParseImportSection(bytes, ref offset, sectionEnd, imports, tagTypes);
                     break;
                 case 7:
-                    ParseExportSection(bytes, ref offset, sectionEnd, exports);
+                    ParseExportSection(bytes, ref offset, sectionEnd, exports, functionTypes, tagTypes);
+                    break;
+                case 13:
+                    ParseTagSection(bytes, ref offset, sectionEnd, tagTypes);
                     break;
                 default:
                     offset = sectionEnd;
@@ -77,7 +85,55 @@ internal sealed class WasmModuleMetadata
         return new WasmModuleMetadata(imports, exports, customSections);
     }
 
-    private static void ParseImportSection(byte[] bytes, ref int offset, int sectionEnd, List<WasmModuleImportDescriptor> imports)
+    private static void ParseTypeSection(byte[] bytes, ref int offset, int sectionEnd, List<string[]> functionTypes)
+    {
+        var parsedTypes = new List<string[]>();
+
+        try
+        {
+            var count = ReadVarUInt32(bytes, ref offset);
+
+            for (uint i = 0; i < count; i++)
+            {
+                if (ReadByte(bytes, ref offset, sectionEnd) != 0x60)
+                {
+                    throw new ArgumentException("Unsupported WebAssembly type definition.", nameof(bytes));
+                }
+
+                var parameterCount = ReadVarUInt32(bytes, ref offset);
+                var parameters = new string[parameterCount];
+
+                for (var parameterIndex = 0; parameterIndex < parameters.Length; parameterIndex++)
+                {
+                    parameters[parameterIndex] = ReadValueType(bytes, ref offset, sectionEnd);
+                }
+
+                var resultCount = ReadVarUInt32(bytes, ref offset);
+
+                for (uint resultIndex = 0; resultIndex < resultCount; resultIndex++)
+                {
+                    _ = ReadValueType(bytes, ref offset, sectionEnd);
+                }
+
+                parsedTypes.Add(parameters);
+            }
+        }
+        catch (ArgumentException)
+        {
+            offset = sectionEnd;
+            return;
+        }
+
+        functionTypes.AddRange(parsedTypes);
+        offset = sectionEnd;
+    }
+
+    private static void ParseImportSection(
+        byte[] bytes,
+        ref int offset,
+        int sectionEnd,
+        List<WasmModuleImportDescriptor> imports,
+        List<uint> tagTypes)
     {
         var count = ReadVarUInt32(bytes, ref offset);
 
@@ -89,13 +145,28 @@ internal sealed class WasmModuleMetadata
 
             var kind = bytes[offset++];
             imports.Add(new WasmModuleImportDescriptor(moduleName, name, MapKind(kind)));
-            SkipImportType(bytes, ref offset, sectionEnd, kind);
+
+            if (kind == 0x04)
+            {
+                _ = ReadByte(bytes, ref offset, sectionEnd);
+                tagTypes.Add(ReadVarUInt32(bytes, ref offset));
+            }
+            else
+            {
+                SkipImportType(bytes, ref offset, sectionEnd, kind);
+            }
         }
 
         offset = sectionEnd;
     }
 
-    private static void ParseExportSection(byte[] bytes, ref int offset, int sectionEnd, List<WasmModuleExportDescriptor> exports)
+    private static void ParseExportSection(
+        byte[] bytes,
+        ref int offset,
+        int sectionEnd,
+        List<WasmModuleExportDescriptor> exports,
+        IReadOnlyList<string[]> functionTypes,
+        IReadOnlyList<uint> tagTypes)
     {
         var count = ReadVarUInt32(bytes, ref offset);
 
@@ -104,11 +175,39 @@ internal sealed class WasmModuleMetadata
             var name = ReadName(bytes, ref offset);
             EnsureRemaining(bytes, offset, sectionEnd, 1);
             var kind = bytes[offset++];
-            _ = ReadVarUInt32(bytes, ref offset);
-            exports.Add(new WasmModuleExportDescriptor(name, MapKind(kind)));
+            var index = ReadVarUInt32(bytes, ref offset);
+            var tagParameters = kind == 0x04 ? GetTagParameters(bytes, index, functionTypes, tagTypes) : null;
+            exports.Add(new WasmModuleExportDescriptor(name, MapKind(kind), index, tagParameters));
         }
 
         offset = sectionEnd;
+    }
+
+    private static void ParseTagSection(byte[] bytes, ref int offset, int sectionEnd, List<uint> tagTypes)
+    {
+        var count = ReadVarUInt32(bytes, ref offset);
+
+        for (uint i = 0; i < count; i++)
+        {
+            _ = ReadByte(bytes, ref offset, sectionEnd);
+            tagTypes.Add(ReadVarUInt32(bytes, ref offset));
+        }
+
+        offset = sectionEnd;
+    }
+
+    private static string[] GetTagParameters(
+        byte[] bytes,
+        uint tagIndex,
+        IReadOnlyList<string[]> functionTypes,
+        IReadOnlyList<uint> tagTypes)
+    {
+        if (tagIndex >= tagTypes.Count || tagTypes[(int)tagIndex] >= functionTypes.Count)
+        {
+            throw new ArgumentException("Invalid WebAssembly tag type index.", nameof(bytes));
+        }
+
+        return functionTypes[(int)tagTypes[(int)tagIndex]];
     }
 
     private static void ParseCustomSection(byte[] bytes, ref int offset, int sectionEnd, List<WasmCustomSectionDescriptor> sections)
@@ -173,6 +272,25 @@ internal sealed class WasmModuleMetadata
             _ = ReadVarUInt32(bytes, ref offset);
         }
     }
+
+    private static string ReadValueType(byte[] bytes, ref int offset, int sectionEnd) =>
+        ReadByte(bytes, ref offset, sectionEnd) switch
+        {
+            0x7F => "i32",
+            0x7E => "i64",
+            0x7D => "f32",
+            0x7C => "f64",
+            0x7B => "v128",
+            0x70 => "funcref",
+            0x6F => "externref",
+            0x6E => "anyref",
+            0x6D => "eqref",
+            0x6C => "i31ref",
+            0x6B => "structref",
+            0x6A => "arrayref",
+            0x69 => "exnref",
+            _ => throw new ArgumentException("Unsupported WebAssembly value type.", nameof(bytes)),
+        };
 
     private static string ReadName(byte[] bytes, ref int offset)
     {
@@ -247,11 +365,17 @@ internal sealed class WasmModuleMetadata
 /// </summary>
 public sealed class WasmModuleExportDescriptor
 {
-    internal WasmModuleExportDescriptor(string name, string kind)
+    internal WasmModuleExportDescriptor(string name, string kind, uint index, string[]? tagParameters)
     {
         Name = name;
         Kind = kind;
+        Index = index;
+        TagParameters = tagParameters;
     }
+
+    internal uint Index { get; }
+
+    internal string[]? TagParameters { get; }
 
     /// <summary>
     /// Gets the exported field name.

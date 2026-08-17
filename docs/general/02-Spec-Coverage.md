@@ -24,13 +24,13 @@ Status values:
 | `Module.exports(module)` | Partial | Available as instance method `module.exports()` returning descriptor objects. |
 | `Module.imports(module)` | Partial | Available as instance method `module.imports()` returning descriptor objects. |
 | `Module.customSections(module, name)` | Partial | Available as instance method `module.customSections(name)` returning `byte[][]`. |
-| `Instance.exports` | Partial | Available as `instance.exports`, with function, memory, table, and global wrappers plus descriptor values for other export kinds. |
+| `Instance.exports` | Partial | Available as `instance.exports`, with function, memory, table, global, and tag wrappers plus descriptor values for other export kinds. |
 | Exported function invocation | Implemented | Supported via `instance.invoke(...)` and `WasmJsExportedFunction.invoke(...)`. |
 | Host import functions | Implemented | Supported via `WithWasmImports(...)` and `WasmImportFunction`. |
 | Memory object API (`Memory`) | Partial | Exported memories expose `buffer`, `read(offset, count)`, `write(offset, bytes)`, and `grow(delta)`. `buffer` is a current `byte[]` snapshot rather than a live JavaScript `ArrayBuffer`; memory construction and imports are not yet exposed. |
 | Table object API (`Table`) | Partial | Exported `funcref` and `externref` tables expose `length`, `get(index)`, `set(index, value)`, and `grow(delta, value)`. Table construction and imports are not yet exposed. |
 | Global object API (`Global`) | Partial | Exported numeric and reference globals expose a mutable or immutable `value` accessor and `valueOf()`. Global construction and imports are not yet exposed. |
-| Tag object API (`Tag`) | Not yet | No full JS API `Tag` object projection yet. |
+| Tag object API (`Tag`) | Partial | Tag exports expose `type().parameters`, including re-exported imported tags. Wasmtime 44 does not expose native Tag handles or enable exception modules through its .NET API. |
 | Exception object API (`Exception`) | Not yet | No full JS API exception projection yet. |
 | Error constructors (`CompileError`, `LinkError`, `RuntimeError`) | Not yet | No dedicated namespace error constructor projection yet. |
 | JS String builtins set | Not yet | No compile-option builtin-set wiring yet. |
@@ -52,6 +52,7 @@ The current implementation is validated by runtime and bridge tests in the repos
 - exported memory read, write, and growth
 - exported table access, mutation, and growth
 - exported global access and mutation
+- exported and re-exported tag type metadata
 - import descriptor extraction
 - export descriptor extraction
 - custom section lookup behavior

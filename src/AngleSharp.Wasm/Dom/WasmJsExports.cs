@@ -15,21 +15,37 @@ public sealed class WasmJsExports
 
     internal WasmJsExports(WasmJsInstance owner, IReadOnlyList<WasmModuleExportDescriptor> exportsMetadata)
     {
+        var tags = new Dictionary<uint, WasmJsTag>();
         _entries = exportsMetadata
             .ToDictionary(
                 m => m.Name,
-                m => CreateExport(owner, m));
+                m => CreateExport(owner, m, tags));
     }
 
-    private static object CreateExport(WasmJsInstance owner, WasmModuleExportDescriptor metadata) =>
+    private static object CreateExport(
+        WasmJsInstance owner,
+        WasmModuleExportDescriptor metadata,
+        IDictionary<uint, WasmJsTag> tags) =>
         metadata.Kind switch
         {
             "function" => CreateFunction(owner, metadata.Name),
             "table" => CreateTable(owner, metadata.Name),
             "memory" => CreateMemory(owner, metadata.Name),
             "global" => CreateGlobal(owner, metadata.Name),
+            "tag" => CreateTag(metadata, tags),
             _ => new WasmJsExportValue(metadata.Name, metadata.Kind),
         };
+
+    private static WasmJsTag CreateTag(WasmModuleExportDescriptor metadata, IDictionary<uint, WasmJsTag> tags)
+    {
+        if (!tags.TryGetValue(metadata.Index, out var tag))
+        {
+            tag = new WasmJsTag(metadata.TagParameters ?? Array.Empty<string>());
+            tags.Add(metadata.Index, tag);
+        }
+
+        return tag;
+    }
 
     private static WasmJsExportedFunction CreateFunction(WasmJsInstance owner, string name)
     {
