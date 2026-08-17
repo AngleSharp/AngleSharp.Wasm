@@ -9,7 +9,7 @@ using Wasmtime;
 /// <summary>
 /// Wraps a Wasmtime instance and store.
 /// </summary>
-public sealed class WasmtimeInstance : IWasmInstance
+public sealed class WasmtimeInstance : IWasmInstance, IWasmMemoryProvider
 {
     private readonly Store _store;
     private readonly Instance _instance;
@@ -19,6 +19,20 @@ public sealed class WasmtimeInstance : IWasmInstance
     {
         _store = store;
         _instance = instance;
+    }
+
+    /// <inheritdoc />
+    public IWasmMemory? GetMemory(string exportName)
+    {
+        ThrowIfDisposed();
+
+        if (string.IsNullOrEmpty(exportName))
+        {
+            throw new ArgumentException("Export name must be provided.", nameof(exportName));
+        }
+
+        var memory = _instance.GetMemory(exportName);
+        return memory is null ? null : new WasmtimeMemory(memory);
     }
 
     /// <inheritdoc />

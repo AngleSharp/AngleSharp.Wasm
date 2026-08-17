@@ -24,10 +24,10 @@ Status values:
 | `Module.exports(module)` | Partial | Available as instance method `module.exports()` returning descriptor objects. |
 | `Module.imports(module)` | Partial | Available as instance method `module.imports()` returning descriptor objects. |
 | `Module.customSections(module, name)` | Partial | Available as instance method `module.customSections(name)` returning `byte[][]`. |
-| `Instance.exports` | Partial | Available as `instance.exports`, with function wrappers and descriptor values for non-function exports. |
+| `Instance.exports` | Partial | Available as `instance.exports`, with function and memory wrappers plus descriptor values for other export kinds. |
 | Exported function invocation | Implemented | Supported via `instance.invoke(...)` and `WasmJsExportedFunction.invoke(...)`. |
 | Host import functions | Implemented | Supported via `WithWasmImports(...)` and `WasmImportFunction`. |
-| Memory object API (`Memory`) | Not yet | No full JS API `Memory` object projection yet. |
+| Memory object API (`Memory`) | Partial | Exported memories expose `buffer`, `read(offset, count)`, `write(offset, bytes)`, and `grow(delta)`. `buffer` is a current `byte[]` snapshot rather than a live JavaScript `ArrayBuffer`; memory construction and imports are not yet exposed. |
 | Table object API (`Table`) | Not yet | No full JS API `Table` object projection yet. |
 | Global object API (`Global`) | Not yet | No full JS API `Global` object projection yet. |
 | Tag object API (`Tag`) | Not yet | No full JS API `Tag` object projection yet. |
@@ -49,6 +49,7 @@ The current implementation is validated by runtime and bridge tests in the repos
 
 - compile and instantiate flows
 - export invocation
+- exported memory read, write, and growth
 - import descriptor extraction
 - export descriptor extraction
 - custom section lookup behavior

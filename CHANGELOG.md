@@ -1,3 +1,9 @@
+# 1.1.0
+
+Released on Friday, August 21 2026.
+
+- Added correct `WebAssembly.Memory` object projection (#6)
+
 # 1.0.0
 
 Released on Friday, July 31 2026.

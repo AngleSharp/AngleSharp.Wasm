@@ -127,7 +127,7 @@ public sealed class WasmJsBridgeTests
     }
 
     [Test]
-    public async Task InstanceExportsExposeNonFunctionKindsAsValueDescriptors()
+    public async Task InstanceExportsExposeMemoryAsLiveMemoryObject()
     {
         var config = Configuration.Default.WithWasm();
         using var context = BrowsingContext.New(config);
@@ -137,15 +137,42 @@ public sealed class WasmJsBridgeTests
         var moduleExports = module.Exports();
         var instance = WebAssembly.Instantiate(context.Current!, module);
 
-        var memExport = instance.Exports["mem"] as WasmJsExportValue;
+        var memExport = instance.Exports["mem"] as WasmJsMemory;
 
         Assert.That(moduleExports, Has.Length.EqualTo(1));
         Assert.That(moduleExports[0].Name, Is.EqualTo("mem"));
         Assert.That(moduleExports[0].Kind, Is.EqualTo("memory"));
         Assert.That(memExport, Is.Not.Null);
-        Assert.That(memExport!.Name, Is.EqualTo("mem"));
-        Assert.That(memExport.Kind, Is.EqualTo("memory"));
+        Assert.That(memExport!.Buffer, Has.Length.EqualTo(65536));
+
+        memExport.Write(42, new byte[] { 1, 2, 3 });
+
+        Assert.That(memExport.Read(42, 3), Is.EqualTo(new byte[] { 1, 2, 3 }));
+        Assert.That(memExport.Buffer[43], Is.EqualTo(2));
+        Assert.That(memExport.Grow(1), Is.EqualTo(1));
+        Assert.That(memExport.Buffer, Has.Length.EqualTo(2 * 65536));
         Assert.That(instance.Exports.Keys().Single(), Is.EqualTo("mem"));
+    }
+
+    [Test]
+    public async Task MemoryProjectionValidatesArgumentsAndBounds()
+    {
+        var config = Configuration.Default.WithWasm();
+        using var context = BrowsingContext.New(config);
+        using var document = await context.OpenNewAsync();
+
+        var module = WebAssembly.Compile(context.Current!, MemoryExportModule);
+        var instance = WebAssembly.Instantiate(context.Current!, module);
+        var memory = instance.Exports["mem"] as WasmJsMemory;
+
+        Assert.That(memory, Is.Not.Null);
+        Assert.That(() => memory!.Read(-1, 1), Throws.TypeOf<ArgumentOutOfRangeException>());
+        Assert.That(() => memory!.Read(0, -1), Throws.TypeOf<ArgumentOutOfRangeException>());
+        Assert.That(() => memory!.Read(65536, 1), Throws.TypeOf<ArgumentOutOfRangeException>());
+        Assert.That(() => memory!.Write(-1, Array.Empty<byte>()), Throws.TypeOf<ArgumentOutOfRangeException>());
+        Assert.That(() => memory!.Write(0, null!), Throws.ArgumentNullException);
+        Assert.That(() => memory!.Write(65536, new byte[] { 1 }), Throws.TypeOf<ArgumentOutOfRangeException>());
+        Assert.That(() => memory!.Grow(-1), Throws.TypeOf<ArgumentOutOfRangeException>());
     }
 
     [Test]

@@ -1,5 +1,6 @@
 namespace AngleSharp.Wasm.Dom;
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using AngleSharp.Attributes;
@@ -17,9 +18,27 @@ public sealed class WasmJsExports
         _entries = exportsMetadata
             .ToDictionary(
                 m => m.Name,
-                m => m.Kind == "function"
-                    ? (object)new WasmJsExportedFunction(owner, m.Name)
-                    : new WasmJsExportValue(m.Name, m.Kind));
+                m => CreateExport(owner, m));
+    }
+
+    private static object CreateExport(WasmJsInstance owner, WasmModuleExportDescriptor metadata) =>
+        metadata.Kind switch
+        {
+            "function" => new WasmJsExportedFunction(owner, metadata.Name),
+            "memory" => CreateMemory(owner, metadata.Name),
+            _ => new WasmJsExportValue(metadata.Name, metadata.Kind),
+        };
+
+    private static WasmJsMemory CreateMemory(WasmJsInstance owner, string name)
+    {
+        if (owner.Instance is not IWasmMemoryProvider provider)
+        {
+            throw new NotSupportedException("The configured WebAssembly runtime does not support memory exports.");
+        }
+
+        var memory = provider.GetMemory(name)
+            ?? throw new InvalidOperationException($"The export '{name}' is not a memory.");
+        return new WasmJsMemory(memory);
     }
 
     /// <summary>
