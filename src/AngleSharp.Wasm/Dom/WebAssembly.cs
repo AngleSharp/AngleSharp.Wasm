@@ -2,9 +2,12 @@ namespace AngleSharp.Wasm.Dom;
 
 using AngleSharp.Attributes;
 using AngleSharp.Dom;
+using AngleSharp.Io;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Runtime.CompilerServices;
 
 /// <summary>
@@ -51,6 +54,30 @@ public static class WebAssembly
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// Compiles a WebAssembly module from an HTTP response body.
+    /// </summary>
+    /// <param name="window">The host.</param>
+    /// <param name="source">The response containing the module.</param>
+    /// <returns>The compiled module.</returns>
+    [DomName("compileStreaming")]
+    public static WasmJsModule CompileStreaming(this IWindow window, IResponse source) =>
+        Compile(window, ReadStreamingSource(source));
+
+    /// <summary>
+    /// Compiles and instantiates a WebAssembly module from an HTTP response body.
+    /// </summary>
+    /// <param name="window">The host.</param>
+    /// <param name="source">The response containing the module.</param>
+    /// <returns>The compiled module and instance.</returns>
+    [DomName("instantiateStreaming")]
+    public static WasmJsInstantiationResult InstantiateStreaming(this IWindow window, IResponse source)
+    {
+        var module = CompileStreaming(window, source);
+        var instance = Instantiate(window, module);
+        return new WasmJsInstantiationResult(module, instance);
     }
 
     /// <summary>
@@ -104,5 +131,34 @@ public static class WebAssembly
             .GetServices<IWasmImportProvider>()
             .SelectMany(provider => provider.GetImports(window.Document.Context))
             .ToArray();
+
+    private static byte[] ReadStreamingSource(IResponse source)
+    {
+        if (source is null)
+        {
+            throw new ArgumentNullException(nameof(source));
+        }
+
+        if (source.StatusCode < HttpStatusCode.OK || source.StatusCode >= HttpStatusCode.MultipleChoices)
+        {
+            throw new InvalidOperationException($"The WebAssembly response has unsuccessful status code {(int)source.StatusCode}.");
+        }
+
+        var contentType = source.Headers
+            .FirstOrDefault(header => String.Equals(header.Key, "Content-Type", StringComparison.OrdinalIgnoreCase))
+            .Value;
+
+        if (contentType is null || !String.Equals(
+            contentType.Split(';', 2)[0].Trim(),
+            "application/wasm",
+            StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("The WebAssembly response must use the 'application/wasm' content type.");
+        }
+
+        using var buffer = new MemoryStream();
+        source.Content.CopyTo(buffer);
+        return buffer.ToArray();
+    }
 }
 

@@ -19,7 +19,7 @@ Status values:
 | WebAssembly namespace: `compile(bytes)` | Partial | Exposed as synchronous bridge method `WebAssembly.compile(byte[])`. |
 | WebAssembly namespace: `instantiate(...)` | Partial | Exposed as synchronous bridge method `WebAssembly.instantiate(WasmJsModule)`. |
 | WebAssembly namespace: `validate(bytes)` | Implemented | Exposed as synchronous `WebAssembly.validate(byte[])`, using native Wasmtime validation or compile-and-dispose fallback for custom runtimes. |
-| WebAssembly namespace: streaming APIs | Not yet | No `instantiateStreaming` / `compileStreaming`. |
+| WebAssembly namespace: streaming APIs | Partial | `compileStreaming(IResponse)` and `instantiateStreaming(IResponse)` synchronously consume successful `application/wasm` AngleSharp responses. Response bodies are buffered for metadata extraction. |
 | WebAssembly namespace: compile options | Not yet | No `builtins` / `importedStringConstants` options support yet. |
 | `Module.exports(module)` | Partial | Available as instance method `module.exports()` returning descriptor objects. |
 | `Module.imports(module)` | Partial | Available as instance method `module.imports()` returning descriptor objects. |
@@ -49,6 +49,7 @@ The current implementation is validated by runtime and bridge tests in the repos
 
 - compile and instantiate flows
 - module validation
+- response-based compilation and instantiation
 - export invocation
 - exported memory read, write, and growth
 - exported table access, mutation, and growth

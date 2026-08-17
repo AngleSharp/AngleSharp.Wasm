@@ -66,7 +66,7 @@ Current numeric value kinds are supported:
 ## What are known limitations today?
 
 - No Promise-based `compile` / `instantiate` bridge methods.
-- No streaming APIs.
+- Streaming APIs buffer response bodies and return synchronously rather than returning promises.
 - No compile options support (`builtins`, `importedStringConstants`).
 - Runtime-thrown Wasm exception interoperability is not yet available.
 

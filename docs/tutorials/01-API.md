@@ -42,6 +42,14 @@ Compiles bytes and returns a `WasmJsModule`.
 
 Returns whether the bytes form a valid WebAssembly module without instantiating it.
 
+### `WebAssembly.compileStreaming(IResponse source)`
+
+Synchronously consumes a successful `application/wasm` response and returns a compiled `WasmJsModule`.
+
+### `WebAssembly.instantiateStreaming(IResponse source)`
+
+Synchronously consumes a successful `application/wasm` response and returns a `WasmJsInstantiationResult` containing `module` and `instance`.
+
 ### `WebAssembly.instantiate(WasmJsModule module)`
 
 Instantiates a compiled module and returns a `WasmJsInstance`.

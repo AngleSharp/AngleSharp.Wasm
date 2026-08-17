@@ -1,10 +1,13 @@
 namespace AngleSharp.Wasm.Tests;
 
 using AngleSharp.Wasm.Dom;
+using AngleSharp.Io;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -205,6 +208,41 @@ public sealed class WasmJsBridgeTests
         Assert.That(WebAssembly.Validate(context.Current!, new byte[] { 1 }), Is.True);
         Assert.That(runtime.LastModuleDisposed, Is.True);
         Assert.That(WebAssembly.Validate(context.Current!, Array.Empty<byte>()), Is.False);
+    }
+
+    [Test]
+    public async Task BridgeCanCompileAndInstantiateStreamingResponse()
+    {
+        var config = Configuration.Default.WithWasm();
+        using var context = BrowsingContext.New(config);
+        using var document = await context.OpenNewAsync();
+        using var compileResponse = CreateWasmResponse(AnswerModule, contentType: "Application/Wasm; charset=binary");
+
+        var module = WebAssembly.CompileStreaming(context.Current!, compileResponse);
+
+        Assert.That(module.Exports().Single().Name, Is.EqualTo("answer"));
+
+        using var instantiateResponse = CreateWasmResponse(AnswerModule);
+        var result = WebAssembly.InstantiateStreaming(context.Current!, instantiateResponse);
+        var function = result.Instance.Exports["answer"] as WasmJsExportedFunction;
+
+        Assert.That(result.Module.Exports().Single().Name, Is.EqualTo("answer"));
+        Assert.That(function, Is.Not.Null);
+        Assert.That(function!.Invoke(), Is.EqualTo(42));
+    }
+
+    [Test]
+    public async Task StreamingMethodsValidateResponseStatusAndContentType()
+    {
+        var config = Configuration.Default.WithWasm();
+        using var context = BrowsingContext.New(config);
+        using var document = await context.OpenNewAsync();
+        using var badStatus = CreateWasmResponse(AnswerModule, HttpStatusCode.NotFound);
+        using var badContentType = CreateWasmResponse(AnswerModule, contentType: "application/octet-stream");
+
+        Assert.That(() => WebAssembly.CompileStreaming(context.Current!, null!), Throws.ArgumentNullException);
+        Assert.That(() => WebAssembly.CompileStreaming(context.Current!, badStatus), Throws.InvalidOperationException);
+        Assert.That(() => WebAssembly.CompileStreaming(context.Current!, badContentType), Throws.InvalidOperationException);
     }
 
     [Test]
@@ -573,6 +611,15 @@ public sealed class WasmJsBridgeTests
             null)!;
         return new MetadataOnlyInstanceScope(runtimeInstance, instance);
     }
+
+    private static IResponse CreateWasmResponse(
+        byte[] moduleBytes,
+        HttpStatusCode statusCode = HttpStatusCode.OK,
+        string contentType = "application/wasm") =>
+        VirtualResponse.Create(response => response
+            .Status(statusCode)
+            .Header("Content-Type", contentType)
+            .Content(new MemoryStream(moduleBytes, writable: false), shouldDispose: true));
 
     private sealed class MetadataOnlyInstanceScope : IDisposable
     {
