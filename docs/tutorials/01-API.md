@@ -38,6 +38,8 @@ When used with a scripting integration that discovers DOM attributes, the follow
 
 Compiles bytes and returns a `WasmJsModule`.
 
+An overload accepts `WasmCompileOptions`.
+
 ### `WebAssembly.validate(byte[] moduleBytes)`
 
 Returns whether the bytes form a valid WebAssembly module without instantiating it.
@@ -46,13 +48,26 @@ Returns whether the bytes form a valid WebAssembly module without instantiating 
 
 Synchronously consumes a successful `application/wasm` response and returns a compiled `WasmJsModule`.
 
+An overload accepts `WasmCompileOptions`.
+
 ### `WebAssembly.instantiateStreaming(IResponse source)`
 
 Synchronously consumes a successful `application/wasm` response and returns a `WasmJsInstantiationResult` containing `module` and `instance`.
 
+An overload accepts `WasmCompileOptions`.
+
 ### `WebAssembly.instantiate(WasmJsModule module)`
 
 Instantiates a compiled module and returns a `WasmJsInstance`.
+
+Byte-array overloads compile and instantiate in one operation and return `WasmJsInstantiationResult`; compile options can be supplied.
+
+## `WasmCompileOptions`
+
+- `builtins`: requested builtin sets; currently the standard `js-string` value is recognized.
+- `importedStringConstants`: module namespace for imported string constants.
+
+Options are forwarded to runtimes implementing `IWasmCompileOptionsCompiler`. Wasmtime 44 does not expose either feature and rejects non-empty options.
 
 ## `WasmJsModule`
 

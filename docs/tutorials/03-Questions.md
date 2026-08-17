@@ -67,7 +67,7 @@ Current numeric value kinds are supported:
 
 - No Promise-based `compile` / `instantiate` bridge methods.
 - Streaming APIs buffer response bodies and return synchronously rather than returning promises.
-- No compile options support (`builtins`, `importedStringConstants`).
+- Wasmtime 44 cannot execute the `builtins` or `importedStringConstants` compile options; capable custom runtimes can implement them through `IWasmCompileOptionsCompiler`.
 - Runtime-thrown Wasm exception interoperability is not yet available.
 
 These limits are expected at this stage and can be expanded in future versions.

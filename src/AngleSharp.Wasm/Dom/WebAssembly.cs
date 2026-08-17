@@ -64,7 +64,18 @@ public static class WebAssembly
     /// <returns>The compiled module.</returns>
     [DomName("compileStreaming")]
     public static WasmJsModule CompileStreaming(this IWindow window, IResponse source) =>
-        Compile(window, ReadStreamingSource(source));
+        CompileStreaming(window, source, null);
+
+    /// <summary>
+    /// Compiles a WebAssembly module from an HTTP response body with compile options.
+    /// </summary>
+    /// <param name="window">The host.</param>
+    /// <param name="source">The response containing the module.</param>
+    /// <param name="options">The compile options.</param>
+    /// <returns>The compiled module.</returns>
+    [DomName("compileStreaming")]
+    public static WasmJsModule CompileStreaming(this IWindow window, IResponse source, WasmCompileOptions? options) =>
+        Compile(window, ReadStreamingSource(source), options);
 
     /// <summary>
     /// Compiles and instantiates a WebAssembly module from an HTTP response body.
@@ -74,8 +85,50 @@ public static class WebAssembly
     /// <returns>The compiled module and instance.</returns>
     [DomName("instantiateStreaming")]
     public static WasmJsInstantiationResult InstantiateStreaming(this IWindow window, IResponse source)
+        => InstantiateStreaming(window, source, null);
+
+    /// <summary>
+    /// Compiles and instantiates a WebAssembly module from an HTTP response body with compile options.
+    /// </summary>
+    /// <param name="window">The host.</param>
+    /// <param name="source">The response containing the module.</param>
+    /// <param name="options">The compile options.</param>
+    /// <returns>The compiled module and instance.</returns>
+    [DomName("instantiateStreaming")]
+    public static WasmJsInstantiationResult InstantiateStreaming(
+        this IWindow window,
+        IResponse source,
+        WasmCompileOptions? options)
     {
-        var module = CompileStreaming(window, source);
+        var module = CompileStreaming(window, source, options);
+        var instance = Instantiate(window, module);
+        return new WasmJsInstantiationResult(module, instance);
+    }
+
+    /// <summary>
+    /// Compiles and instantiates module bytes.
+    /// </summary>
+    /// <param name="window">The host.</param>
+    /// <param name="moduleBytes">The module bytes.</param>
+    /// <returns>The compiled module and instance.</returns>
+    [DomName("instantiate")]
+    public static WasmJsInstantiationResult Instantiate(this IWindow window, byte[] moduleBytes) =>
+        Instantiate(window, moduleBytes, null);
+
+    /// <summary>
+    /// Compiles and instantiates module bytes with compile options.
+    /// </summary>
+    /// <param name="window">The host.</param>
+    /// <param name="moduleBytes">The module bytes.</param>
+    /// <param name="options">The compile options.</param>
+    /// <returns>The compiled module and instance.</returns>
+    [DomName("instantiate")]
+    public static WasmJsInstantiationResult Instantiate(
+        this IWindow window,
+        byte[] moduleBytes,
+        WasmCompileOptions? options)
+    {
+        var module = Compile(window, moduleBytes, options);
         var instance = Instantiate(window, module);
         return new WasmJsInstantiationResult(module, instance);
     }
@@ -88,6 +141,17 @@ public static class WebAssembly
     /// <returns>The module handle.</returns>
     [DomName("compile")]
     public static WasmJsModule Compile(this IWindow window, byte[] moduleBytes)
+        => Compile(window, moduleBytes, null);
+
+    /// <summary>
+    /// Compiles a module with compile options and returns a bridge module handle.
+    /// </summary>
+    /// <param name="window">The host.</param>
+    /// <param name="moduleBytes">The module bytes.</param>
+    /// <param name="options">The compile options.</param>
+    /// <returns>The module handle.</returns>
+    [DomName("compile")]
+    public static WasmJsModule Compile(this IWindow window, byte[] moduleBytes, WasmCompileOptions? options)
     {
         if (moduleBytes is null)
         {
@@ -95,7 +159,23 @@ public static class WebAssembly
         }
 
         var runtime = GetOrCreateRuntime(window);
-        var module = runtime.CompileAsync(moduleBytes).AsTask().GetAwaiter().GetResult();
+        var compileOptions = options?.Snapshot();
+        IWasmCompiledModule module;
+
+        if (compileOptions is not null && runtime is IWasmCompileOptionsCompiler compiler)
+        {
+            module = compiler.CompileAsync(moduleBytes, compileOptions).AsTask().GetAwaiter().GetResult();
+        }
+        else
+        {
+            if (compileOptions?.HasFeatures == true)
+            {
+                throw new NotSupportedException("The configured WebAssembly runtime does not support compile options.");
+            }
+
+            module = runtime.CompileAsync(moduleBytes).AsTask().GetAwaiter().GetResult();
+        }
+
         return new WasmJsModule(runtime, module, moduleBytes);
     }
 

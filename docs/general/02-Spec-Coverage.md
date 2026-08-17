@@ -20,7 +20,7 @@ Status values:
 | WebAssembly namespace: `instantiate(...)` | Partial | Exposed as synchronous bridge method `WebAssembly.instantiate(WasmJsModule)`. |
 | WebAssembly namespace: `validate(bytes)` | Implemented | Exposed as synchronous `WebAssembly.validate(byte[])`, using native Wasmtime validation or compile-and-dispose fallback for custom runtimes. |
 | WebAssembly namespace: streaming APIs | Partial | `compileStreaming(IResponse)` and `instantiateStreaming(IResponse)` synchronously consume successful `application/wasm` AngleSharp responses. Response bodies are buffered for metadata extraction. |
-| WebAssembly namespace: compile options | Not yet | No `builtins` / `importedStringConstants` options support yet. |
+| WebAssembly namespace: compile options | Partial | `WasmCompileOptions` validates and routes `builtins` and `importedStringConstants` through compile, byte instantiate, and streaming entry points. Wasmtime 44 cannot execute these options. |
 | `Module.exports(module)` | Partial | Available as instance method `module.exports()` returning descriptor objects. |
 | `Module.imports(module)` | Partial | Available as instance method `module.imports()` returning descriptor objects. |
 | `Module.customSections(module, name)` | Partial | Available as instance method `module.customSections(name)` returning `byte[][]`. |
@@ -33,7 +33,7 @@ Status values:
 | Tag object API (`Tag`) | Partial | Host-created and exported tags expose `type().parameters`, including re-exported imported tags. Wasmtime 44 does not expose native Tag handles or enable exception modules through its .NET API. |
 | Exception object API (`Exception`) | Partial | Host-created exceptions validate typed payloads and expose `is(tag)` and `getArg(tag, index)`. Runtime-thrown Wasm exceptions cannot be projected through Wasmtime 44. |
 | Error constructors (`CompileError`, `LinkError`, `RuntimeError`) | Not yet | No dedicated namespace error constructor projection yet. |
-| JS String builtins set | Not yet | No compile-option builtin-set wiring yet. |
+| JS String builtins set | Partial | The `js-string` builtin set is recognized and forwarded to capable custom runtimes; Wasmtime 44 has no corresponding API. |
 
 ## Runtime and Type Support
 
@@ -50,6 +50,7 @@ The current implementation is validated by runtime and bridge tests in the repos
 - compile and instantiate flows
 - module validation
 - response-based compilation and instantiation
+- compile option validation and runtime forwarding
 - export invocation
 - exported memory read, write, and growth
 - exported table access, mutation, and growth

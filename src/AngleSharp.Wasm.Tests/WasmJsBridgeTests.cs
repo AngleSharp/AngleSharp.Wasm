@@ -246,6 +246,55 @@ public sealed class WasmJsBridgeTests
     }
 
     [Test]
+    public async Task CompileOptionsAreValidatedAcrossCompileEntryPoints()
+    {
+        var config = Configuration.Default.WithWasm();
+        using var context = BrowsingContext.New(config);
+        using var document = await context.OpenNewAsync();
+        var emptyOptions = new WasmCompileOptions();
+        var builtinOptions = new WasmCompileOptions { Builtins = new[] { "js-string" } };
+        var stringOptions = new WasmCompileOptions { ImportedStringConstants = "strings" };
+        var invalidOptions = new WasmCompileOptions { Builtins = new[] { "invalid" } };
+
+        Assert.That(WebAssembly.Compile(context.Current!, AnswerModule, emptyOptions), Is.Not.Null);
+        Assert.That(() => WebAssembly.Compile(context.Current!, AnswerModule, builtinOptions), Throws.TypeOf<NotSupportedException>());
+        Assert.That(() => WebAssembly.Compile(context.Current!, AnswerModule, stringOptions), Throws.TypeOf<NotSupportedException>());
+        Assert.That(() => WebAssembly.Compile(context.Current!, AnswerModule, invalidOptions), Throws.ArgumentException);
+
+        using var response = CreateWasmResponse(AnswerModule);
+        Assert.That(() => WebAssembly.CompileStreaming(context.Current!, response, builtinOptions), Throws.TypeOf<NotSupportedException>());
+    }
+
+    [Test]
+    public async Task CompileOptionsAreForwardedToCapableRuntime()
+    {
+        using var runtime = new CompileOptionsRuntime();
+        var config = Configuration.Default.WithWasm(_ => new ValidationFallbackRuntimeFactory(runtime));
+        using var context = BrowsingContext.New(config);
+        using var document = await context.OpenNewAsync();
+        var builtins = new[] { "js-string" };
+        var options = new WasmCompileOptions
+        {
+            Builtins = builtins,
+            ImportedStringConstants = "strings",
+        };
+
+        var result = WebAssembly.Instantiate(context.Current!, AnswerModule, options);
+        builtins[0] = "changed";
+
+        Assert.That(runtime.LastOptions, Is.Not.Null);
+        Assert.That(runtime.LastOptions!.Builtins, Is.EqualTo(new[] { "js-string" }));
+        Assert.That(runtime.LastOptions.ImportedStringConstants, Is.EqualTo("strings"));
+        Assert.That(result.Instance.Invoke("answer"), Is.EqualTo(42));
+
+        builtins[0] = "js-string";
+        using var response = CreateWasmResponse(AnswerModule);
+        var streamingResult = WebAssembly.InstantiateStreaming(context.Current!, response, options);
+
+        Assert.That(streamingResult.Instance.Invoke("answer"), Is.EqualTo(42));
+    }
+
+    [Test]
     public async Task ModuleImportsExposeSpecDescriptorFields()
     {
         var config = Configuration.Default.WithWasm();
@@ -527,7 +576,7 @@ public sealed class WasmJsBridgeTests
         using var context = BrowsingContext.New(config);
         using var document = await context.OpenNewAsync();
 
-        Assert.That(() => WebAssembly.Instantiate(context.Current!, null!), Throws.ArgumentNullException);
+        Assert.That(() => WebAssembly.Instantiate(context.Current!, (WasmJsModule)null!), Throws.ArgumentNullException);
     }
 
     [Test]
@@ -698,5 +747,34 @@ public sealed class WasmJsBridgeTests
 
             public void Dispose() => _runtime.LastModuleDisposed = true;
         }
+    }
+
+    private sealed class CompileOptionsRuntime : IWasmRuntime, IWasmCompileOptionsCompiler
+    {
+        private readonly WasmtimeWasmRuntime _runtime = new ();
+
+        public WasmCompileOptions? LastOptions { get; private set; }
+
+        public ValueTask<IWasmCompiledModule> CompileAsync(
+            ReadOnlyMemory<byte> moduleBytes,
+            System.Threading.CancellationToken cancellationToken = default) =>
+            _runtime.CompileAsync(moduleBytes, cancellationToken);
+
+        public ValueTask<IWasmCompiledModule> CompileAsync(
+            ReadOnlyMemory<byte> moduleBytes,
+            WasmCompileOptions options,
+            System.Threading.CancellationToken cancellationToken = default)
+        {
+            LastOptions = options;
+            return _runtime.CompileAsync(moduleBytes, cancellationToken);
+        }
+
+        public ValueTask<IWasmInstance> InstantiateAsync(
+            IWasmCompiledModule compiledModule,
+            IEnumerable<WasmImportFunction>? imports = null,
+            System.Threading.CancellationToken cancellationToken = default) =>
+            _runtime.InstantiateAsync(compiledModule, imports, cancellationToken);
+
+        public void Dispose() => _runtime.Dispose();
     }
 }

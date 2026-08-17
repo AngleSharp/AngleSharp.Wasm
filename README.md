@@ -90,6 +90,7 @@ The current package targets `net8.0` and `net10.0`.
     - `customSections(name)`
 - Module validation via `validate(bytes)`
 - Response-based compilation and instantiation via `compileStreaming(response)` and `instantiateStreaming(response)`
+- Compile option routing for `builtins` and `importedStringConstants`
 - Instance export access
     - `exports` lookup by export name
     - export key enumeration
@@ -111,7 +112,7 @@ AngleSharp.Wasm currently provides a practical subset of the WebAssembly JS API.
 - Bridge methods are synchronous from the caller perspective.
 - Promise-based namespace operations are not currently exposed.
 - Streaming APIs synchronously buffer AngleSharp response streams because module metadata requires the complete binary.
-- Compile options such as builtins / imported string constants are not yet implemented.
+- Compile options are validated and forwarded to capable runtimes. Wasmtime 44 does not expose JavaScript string builtins or imported string constants, so requesting either option with the default backend throws `NotSupportedException`.
 - Exported memories, tables, globals, and tags have object projections; other non-function exports remain descriptors (`name`, `kind`).
 - Host-created tags and exceptions are supported. Wasmtime 44 does not expose native Tag or Exception handles or enable exception modules through its .NET API, so runtime-thrown Wasm exceptions are not yet projected.
 

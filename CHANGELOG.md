@@ -2,6 +2,7 @@
 
 Released on Friday, August 21 2026.
 
+- Updated with compile options support (#13)
 - Added `WebAssembly.compileStreaming` and `WebAssembly.instantiateStreaming` methods (#12)
 - Added `WebAssembly.validate` method (#11)
 - Added `WebAssembly.Exception` object projection (#10)
