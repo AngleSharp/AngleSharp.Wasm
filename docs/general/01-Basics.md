@@ -79,9 +79,11 @@ var config = Configuration.Default
 AngleSharp.Wasm currently implements a pragmatic subset of the WebAssembly JS API.
 
 - Synchronous bridge calls are used (`compile` / `instantiate` are not Promise-based APIs).
-- `WebAssembly.validate(...)`, streaming APIs, and compile options are not implemented.
+- Streaming APIs synchronously buffer AngleSharp response streams. Compile options are forwarded to capable runtimes, but Wasmtime 44 does not support JavaScript string builtins or imported string constants.
 - `Instance.exports` function members are wrapper objects requiring `.invoke(...)`.
-- Non-function exports are currently represented as descriptors (`name`, `kind`), not full `Memory` / `Table` / `Global` / `Tag` objects.
+- Compile, link, and execution failures are projected as `CompileError`, `LinkError`, and `RuntimeError` objects.
+- Exported memories, tables, globals, and tags have object projections; other non-function exports remain descriptors (`name`, `kind`).
+- Host-created exceptions support tag identity and typed payload inspection. The default Wasmtime 44 backend does not expose native Tag or Exception handles, so runtime-thrown Wasm exceptions are not yet projected.
 - `customSections(...)` returns payload bytes (`byte[]`) mapped from custom sections.
 - Runtime invocation/import marshaling is currently focused on numeric value kinds (`i32`, `i64`, `f32`, `f64`).
 

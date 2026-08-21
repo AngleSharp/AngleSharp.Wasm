@@ -27,9 +27,11 @@ Yes, when used with a scripting integration that discovers DOM-annotated members
 
 The current bridge methods are synchronous from the caller perspective.
 
-## Are `Memory`, `Table`, `Global`, and `Tag` exposed as full JS API objects?
+## Are `Memory`, `Table`, `Global`, and `Tag` exposed as JS API objects?
 
-Not yet. Non-function exports currently appear as `WasmJsExportValue` descriptors (`name`, `kind`).
+Exported memories, tables, and globals have usable object projections. Host-created and exported tags expose `type().parameters`, including metadata for re-exported imported tags. Host-created exceptions support `is(tag)` and `getArg(tag, index)`. Memory, table, and global construction and imports are not yet exposed.
+
+Wasmtime 44 does not expose native Tag or Exception handles or enable exception modules through its .NET API, so runtime-thrown Wasm exceptions are not yet projected through the default backend.
 
 ## How do I invoke exported functions?
 
@@ -64,9 +66,8 @@ Current numeric value kinds are supported:
 ## What are known limitations today?
 
 - No Promise-based `compile` / `instantiate` bridge methods.
-- No `validate(...)` method yet.
-- No streaming APIs.
-- No compile options support (`builtins`, `importedStringConstants`).
-- Non-function exports are descriptors instead of full JS API objects.
+- Streaming APIs buffer response bodies and return synchronously rather than returning promises.
+- Wasmtime 44 cannot execute the `builtins` or `importedStringConstants` compile options; capable custom runtimes can implement them through `IWasmCompileOptionsCompiler`.
+- Runtime-thrown Wasm exception interoperability is not yet available.
 
 These limits are expected at this stage and can be expanded in future versions.

@@ -1,5 +1,6 @@
 namespace AngleSharp.Wasm.Dom;
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using AngleSharp.Attributes;
@@ -14,12 +15,84 @@ public sealed class WasmJsExports
 
     internal WasmJsExports(WasmJsInstance owner, IReadOnlyList<WasmModuleExportDescriptor> exportsMetadata)
     {
+        var tags = new Dictionary<uint, WasmJsTag>();
         _entries = exportsMetadata
             .ToDictionary(
                 m => m.Name,
-                m => m.Kind == "function"
-                    ? (object)new WasmJsExportedFunction(owner, m.Name)
-                    : new WasmJsExportValue(m.Name, m.Kind));
+                m => CreateExport(owner, m, tags));
+    }
+
+    private static object CreateExport(
+        WasmJsInstance owner,
+        WasmModuleExportDescriptor metadata,
+        IDictionary<uint, WasmJsTag> tags) =>
+        metadata.Kind switch
+        {
+            "function" => CreateFunction(owner, metadata.Name),
+            "table" => CreateTable(owner, metadata.Name),
+            "memory" => CreateMemory(owner, metadata.Name),
+            "global" => CreateGlobal(owner, metadata.Name),
+            "tag" => CreateTag(metadata, tags),
+            _ => new WasmJsExportValue(metadata.Name, metadata.Kind),
+        };
+
+    private static WasmJsTag CreateTag(WasmModuleExportDescriptor metadata, IDictionary<uint, WasmJsTag> tags)
+    {
+        if (!tags.TryGetValue(metadata.Index, out var tag))
+        {
+            tag = new WasmJsTag(metadata.TagParameters ?? Array.Empty<string>());
+            tags.Add(metadata.Index, tag);
+        }
+
+        return tag;
+    }
+
+    private static WasmJsExportedFunction CreateFunction(WasmJsInstance owner, string name)
+    {
+        if (owner.Instance is IWasmFunctionProvider provider)
+        {
+            var function = provider.GetFunction(name)
+                ?? throw new InvalidOperationException($"The export '{name}' is not a function.");
+            return new WasmJsExportedFunction(function);
+        }
+
+        return new WasmJsExportedFunction(owner, name);
+    }
+
+    private static WasmJsTable CreateTable(WasmJsInstance owner, string name)
+    {
+        if (owner.Instance is not IWasmTableProvider provider)
+        {
+            throw new NotSupportedException("The configured WebAssembly runtime does not support table exports.");
+        }
+
+        var table = provider.GetTable(name)
+            ?? throw new InvalidOperationException($"The export '{name}' is not a table.");
+        return new WasmJsTable(table);
+    }
+
+    private static WasmJsMemory CreateMemory(WasmJsInstance owner, string name)
+    {
+        if (owner.Instance is not IWasmMemoryProvider provider)
+        {
+            throw new NotSupportedException("The configured WebAssembly runtime does not support memory exports.");
+        }
+
+        var memory = provider.GetMemory(name)
+            ?? throw new InvalidOperationException($"The export '{name}' is not a memory.");
+        return new WasmJsMemory(memory);
+    }
+
+    private static WasmJsGlobal CreateGlobal(WasmJsInstance owner, string name)
+    {
+        if (owner.Instance is not IWasmGlobalProvider provider)
+        {
+            throw new NotSupportedException("The configured WebAssembly runtime does not support global exports.");
+        }
+
+        var global = provider.GetGlobal(name)
+            ?? throw new InvalidOperationException($"The export '{name}' is not a global.");
+        return new WasmJsGlobal(global);
     }
 
     /// <summary>

@@ -11,7 +11,7 @@ using Wasmtime;
 /// <summary>
 /// Wasmtime-backed <see cref="IWasmRuntime"/> implementation.
 /// </summary>
-public sealed class WasmtimeWasmRuntime : IWasmRuntime
+public sealed class WasmtimeWasmRuntime : IWasmRuntime, IWasmValidator
 {
     private readonly Engine _engine;
     private bool _disposed;
@@ -22,6 +22,13 @@ public sealed class WasmtimeWasmRuntime : IWasmRuntime
     public WasmtimeWasmRuntime()
     {
         _engine = new Engine();
+    }
+
+    /// <inheritdoc />
+    public bool Validate(ReadOnlyMemory<byte> moduleBytes)
+    {
+        ThrowIfDisposed();
+        return Module.Validate(_engine, moduleBytes.Span) is null;
     }
 
     /// <inheritdoc />

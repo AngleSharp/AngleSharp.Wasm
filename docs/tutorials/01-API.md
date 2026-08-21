@@ -38,9 +38,36 @@ When used with a scripting integration that discovers DOM attributes, the follow
 
 Compiles bytes and returns a `WasmJsModule`.
 
+An overload accepts `WasmCompileOptions`.
+
+### `WebAssembly.validate(byte[] moduleBytes)`
+
+Returns whether the bytes form a valid WebAssembly module without instantiating it.
+
+### `WebAssembly.compileStreaming(IResponse source)`
+
+Synchronously consumes a successful `application/wasm` response and returns a compiled `WasmJsModule`.
+
+An overload accepts `WasmCompileOptions`.
+
+### `WebAssembly.instantiateStreaming(IResponse source)`
+
+Synchronously consumes a successful `application/wasm` response and returns a `WasmJsInstantiationResult` containing `module` and `instance`.
+
+An overload accepts `WasmCompileOptions`.
+
 ### `WebAssembly.instantiate(WasmJsModule module)`
 
 Instantiates a compiled module and returns a `WasmJsInstance`.
+
+Byte-array overloads compile and instantiate in one operation and return `WasmJsInstantiationResult`; compile options can be supplied.
+
+## `WasmCompileOptions`
+
+- `builtins`: requested builtin sets; currently the standard `js-string` value is recognized.
+- `importedStringConstants`: module namespace for imported string constants.
+
+Options are forwarded to runtimes implementing `IWasmCompileOptionsCompiler`. Wasmtime 44 does not expose either feature and rejects non-empty options.
 
 ## `WasmJsModule`
 
@@ -80,7 +107,11 @@ Invokes an exported function by name.
 Returns an export entry by name:
 
 - `WasmJsExportedFunction` for function exports
-- `WasmJsExportValue` for non-function exports
+- `WasmJsMemory` for memory exports
+- `WasmJsTable` for table exports
+- `WasmJsGlobal` for global exports
+- `WasmJsTag` for tag exports
+- `WasmJsExportValue` for other non-function exports
 - `null` if no export is found
 
 ### `keys()`
@@ -92,6 +123,30 @@ Returns all export names.
 ### `invoke(params object?[] arguments)`
 
 Invokes the wrapped exported function.
+
+## `WasmJsMemory`
+
+Provides `buffer`, `read(offset, count)`, `write(offset, bytes)`, and `grow(delta)`.
+
+## `WasmJsTable`
+
+Provides `length`, `get(index)`, `set(index, value)`, and `grow(delta, value)`. Function references returned by `get(...)` expose `invoke(...)`.
+
+## `WasmJsGlobal`
+
+Provides a `value` accessor and `valueOf()`. Assigning to an immutable global throws `InvalidOperationException`.
+
+## `WasmJsTag`
+
+Can be constructed with an ordered array of WebAssembly value type names. Provides `type()`, whose descriptor exposes the tag's `parameters`.
+
+## `WasmJsException`
+
+Construct with a `WasmJsTag` and matching payload array. Provides `is(tag)` and `getArg(tag, index)` and can be thrown and caught as a .NET exception. Runtime-thrown Wasm exceptions are not available through the default Wasmtime 44 backend.
+
+## Error Constructors
+
+`WasmJsCompileError`, `WasmJsLinkError`, and `WasmJsRuntimeError` expose the standard `CompileError`, `LinkError`, and `RuntimeError` DOM names. Each can be constructed with an optional message. Bridge compilation, linking, and execution failures are translated automatically.
 
 ## `WasmJsExportValue`
 
