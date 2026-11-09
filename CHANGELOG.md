@@ -1,3 +1,7 @@
+# 1.1.1
+
+- Fixed host import arguments arriving as `double` instead of their WebAssembly types @michaelthyregod
+
 # 1.1.0
 
 Released on Friday, August 21 2026.

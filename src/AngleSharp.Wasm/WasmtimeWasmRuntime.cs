@@ -126,10 +126,10 @@ public sealed class WasmtimeWasmRuntime : IWasmRuntime, IWasmValidator
         {
             converted[i] = types[i] switch
             {
-                WasmValueType.Int32 => arguments[i].AsInt32(),
-                WasmValueType.Int64 => arguments[i].AsInt64(),
-                WasmValueType.Float32 => arguments[i].AsSingle(),
-                WasmValueType.Float64 => arguments[i].AsDouble(),
+                WasmValueType.Int32 => (object)arguments[i].AsInt32(),
+                WasmValueType.Int64 => (object)arguments[i].AsInt64(),
+                WasmValueType.Float32 => (object)arguments[i].AsSingle(),
+                WasmValueType.Float64 => (object)arguments[i].AsDouble(),
                 _ => throw new NotSupportedException($"Unsupported argument type '{types[i]}'."),
             };
         }
