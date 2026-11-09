@@ -19,6 +19,9 @@ AngleSharp.Wasm extends AngleSharp with WebAssembly execution and a DOM/JavaScri
 - The solution is `src/AngleSharp.Wasm.sln`.
 - The library and test projects target `net8.0` and `net10.0`.
 - The library references AngleSharp 1.x and Wasmtime 44.0.0.
+- The library sets `IsAotCompatible`, so a trim or AOT analyzer warning breaks the build. Avoid
+  reflection over runtime types; the analyzers only see this assembly, so publishing a small
+  `PublishAot` console app against it is the end-to-end check.
 - The default runtime is `WasmtimeWasmRuntime`, registered through `Configuration.WithWasm()`.
 - `global.json`, when present, controls the SDK version used by the build wrapper.
 
