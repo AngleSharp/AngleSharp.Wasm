@@ -11,13 +11,13 @@ using Wasmtime;
 /// </summary>
 public sealed class WasmtimeInstance : IWasmInstance, IWasmFunctionProvider, IWasmGlobalProvider, IWasmMemoryProvider, IWasmTableProvider
 {
-    private readonly Store _store;
+    private readonly WasmtimeStoreContext _context;
     private readonly Instance _instance;
     private bool _disposed;
 
-    internal WasmtimeInstance(Store store, Instance instance)
+    internal WasmtimeInstance(WasmtimeStoreContext context, Instance instance)
     {
-        _store = store;
+        _context = context;
         _instance = instance;
     }
 
@@ -32,7 +32,7 @@ public sealed class WasmtimeInstance : IWasmInstance, IWasmFunctionProvider, IWa
         }
 
         var function = _instance.GetFunction(exportName);
-        return function is null ? null : new WasmtimeFunction(function);
+        return function is null ? null : new WasmtimeFunction(_context, function);
     }
 
     /// <inheritdoc />
@@ -46,7 +46,7 @@ public sealed class WasmtimeInstance : IWasmInstance, IWasmFunctionProvider, IWa
         }
 
         var global = _instance.GetGlobal(exportName);
-        return global is null ? null : new WasmtimeGlobal(global);
+        return global is null ? null : new WasmtimeGlobal(_context, global);
     }
 
     /// <inheritdoc />
@@ -74,7 +74,7 @@ public sealed class WasmtimeInstance : IWasmInstance, IWasmFunctionProvider, IWa
         }
 
         var table = _instance.GetTable(exportName);
-        return table is null ? null : new WasmtimeTable(table);
+        return table is null ? null : new WasmtimeTable(_context, table);
     }
 
     /// <inheritdoc />
@@ -105,7 +105,7 @@ public sealed class WasmtimeInstance : IWasmInstance, IWasmFunctionProvider, IWa
 
         if (invocationArguments.Length == 0)
         {
-            return ValueTask.FromResult(function.Invoke());
+            return ValueTask.FromResult(_context.Run(() => function.Invoke()));
         }
 
         var boxedArguments = new ValueBox[invocationArguments.Length];
@@ -122,7 +122,7 @@ public sealed class WasmtimeInstance : IWasmInstance, IWasmFunctionProvider, IWa
             };
         }
 
-        var result = function.Invoke(boxedArguments);
+        var result = _context.Run(() => function.Invoke(boxedArguments));
         return ValueTask.FromResult(result);
     }
 
@@ -135,7 +135,7 @@ public sealed class WasmtimeInstance : IWasmInstance, IWasmFunctionProvider, IWa
         }
 
         _disposed = true;
-        _store.Dispose();
+        _context.Store.Dispose();
     }
 
     private void ThrowIfDisposed()

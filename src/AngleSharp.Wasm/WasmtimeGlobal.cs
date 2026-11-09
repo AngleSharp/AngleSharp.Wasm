@@ -6,10 +6,12 @@ using Wasmtime;
 
 internal sealed class WasmtimeGlobal : IWasmGlobal
 {
+    private readonly WasmtimeStoreContext _context;
     private readonly Global _global;
 
-    internal WasmtimeGlobal(Global global)
+    internal WasmtimeGlobal(WasmtimeStoreContext context, Global global)
     {
+        _context = context;
         _global = global;
     }
 
@@ -27,10 +29,10 @@ internal sealed class WasmtimeGlobal : IWasmGlobal
         _global.SetValue(Unwrap(value));
     }
 
-    private static object? Wrap(object? value) => value switch
+    private object? Wrap(object? value) => value switch
     {
         Function { IsNull: true } => null,
-        Function function => new WasmtimeFunction(function),
+        Function function => new WasmtimeFunction(_context, function),
         _ => value,
     };
 

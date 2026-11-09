@@ -1,3 +1,7 @@
+# 1.1.1
+
+- Added `WasmtimeWasmRuntimeOptions` to limit memory size, table elements and fuel per call @michaelthyregod
+
 # 1.1.0
 
 Released on Friday, August 21 2026.

@@ -6,8 +6,11 @@ using Wasmtime;
 
 internal sealed class WasmtimeFunction : IWasmFunction
 {
-    internal WasmtimeFunction(Function function)
+    private readonly WasmtimeStoreContext _context;
+
+    internal WasmtimeFunction(WasmtimeStoreContext context, Function function)
     {
+        _context = context;
         Function = function;
     }
 
@@ -25,7 +28,7 @@ internal sealed class WasmtimeFunction : IWasmFunction
 
         if (invocationArguments.Length == 0)
         {
-            return Function.Invoke();
+            return _context.Run(() => Function.Invoke());
         }
 
         var boxedArguments = new ValueBox[invocationArguments.Length];
@@ -42,6 +45,6 @@ internal sealed class WasmtimeFunction : IWasmFunction
             };
         }
 
-        return Function.Invoke(boxedArguments);
+        return _context.Run(() => Function.Invoke(boxedArguments));
     }
 }
