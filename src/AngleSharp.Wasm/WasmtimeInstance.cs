@@ -105,7 +105,7 @@ public sealed class WasmtimeInstance : IWasmInstance, IWasmFunctionProvider, IWa
 
         if (invocationArguments.Length == 0)
         {
-            return ValueTask.FromResult(_context.Run(() => function.Invoke()));
+            return ValueTask.FromResult(_context.Run(static function => function.Invoke(), function));
         }
 
         var boxedArguments = new ValueBox[invocationArguments.Length];
@@ -122,7 +122,7 @@ public sealed class WasmtimeInstance : IWasmInstance, IWasmFunctionProvider, IWa
             };
         }
 
-        var result = _context.Run(() => function.Invoke(boxedArguments));
+        var result = _context.Run(static state => state.Function.Invoke(state.Arguments), (Function: function, Arguments: boxedArguments));
         return ValueTask.FromResult(result);
     }
 

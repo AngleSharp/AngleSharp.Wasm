@@ -99,7 +99,7 @@ public sealed class WasmtimeWasmRuntime : IWasmRuntime, IWasmValidator
             }
 
             var context = new WasmtimeStoreContext(store, _fuel);
-            var instance = context.Run(() => linker.Instantiate(store, wasmtimeModule.Module));
+            var instance = context.Run(static state => state.Linker.Instantiate(state.Store, state.Module), (Linker: linker, Store: store, wasmtimeModule.Module));
 
             return ValueTask.FromResult<IWasmInstance>(new WasmtimeInstance(context, instance));
         }

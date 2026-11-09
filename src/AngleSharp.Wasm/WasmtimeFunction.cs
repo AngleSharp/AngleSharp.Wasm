@@ -28,7 +28,7 @@ internal sealed class WasmtimeFunction : IWasmFunction
 
         if (invocationArguments.Length == 0)
         {
-            return _context.Run(() => Function.Invoke());
+            return _context.Run(static function => function.Invoke(), Function);
         }
 
         var boxedArguments = new ValueBox[invocationArguments.Length];
@@ -45,6 +45,6 @@ internal sealed class WasmtimeFunction : IWasmFunction
             };
         }
 
-        return _context.Run(() => Function.Invoke(boxedArguments));
+        return _context.Run(static state => state.Function.Invoke(state.Arguments), (Function, Arguments: boxedArguments));
     }
 }

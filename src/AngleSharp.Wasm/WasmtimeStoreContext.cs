@@ -22,8 +22,9 @@ internal sealed class WasmtimeStoreContext
     /// <summary>
     /// Runs WebAssembly code in this store. Only the outermost entry refills the fuel, so a host
     /// import that calls back into the store cannot reset the budget of the call it runs in.
+    /// The state is passed through so callers can use a static lambda and allocate nothing per call.
     /// </summary>
-    internal T Run<T>(Func<T> action)
+    internal T Run<TState, T>(Func<TState, T> action, TState state)
     {
         var outermost = _depth++ == 0;
 
@@ -34,7 +35,7 @@ internal sealed class WasmtimeStoreContext
                 Store.Fuel = fuel;
             }
 
-            return action();
+            return action(state);
         }
         finally
         {
