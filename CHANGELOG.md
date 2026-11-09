@@ -1,6 +1,6 @@
 # 1.1.1
 
-- Fixed host import arguments arriving as `double` instead of their WebAssembly types @michaelthyregod
+- Fixed host import arguments arriving as `double` instead of their WebAssembly types (#18) @michaelthyregod
 
 # 1.1.0
 
