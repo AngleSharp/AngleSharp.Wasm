@@ -1,6 +1,8 @@
 namespace AngleSharp.Wasm.Tests;
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using NUnit.Framework;
 
@@ -41,6 +43,21 @@ public sealed class WasmtimeRuntimeTests
         0x03, 0x02, 0x01, 0x00,
         0x07, 0x13, 0x01, 0x0F, 0x61, 0x6E, 0x73, 0x77, 0x65, 0x72, 0x5F, 0x70, 0x6C, 0x75, 0x73, 0x5F, 0x6F, 0x6E, 0x65, 0x00, 0x01,
         0x0A, 0x09, 0x01, 0x07, 0x00, 0x10, 0x00, 0x41, 0x01, 0x6A, 0x0B,
+    };
+
+    // (module
+    //   (import "host" "echo" (func $echo (param i32 i64 f32 f64)))
+    //   (func (export "run") (param i32 i64 f32 f64)
+    //     local.get 0 local.get 1 local.get 2 local.get 3 call $echo))
+    private static readonly byte[] HostImportArgumentsModule =
+    {
+        0x00, 0x61, 0x73, 0x6D,
+        0x01, 0x00, 0x00, 0x00,
+        0x01, 0x08, 0x01, 0x60, 0x04, 0x7F, 0x7E, 0x7D, 0x7C, 0x00,
+        0x02, 0x0D, 0x01, 0x04, 0x68, 0x6F, 0x73, 0x74, 0x04, 0x65, 0x63, 0x68, 0x6F, 0x00, 0x00,
+        0x03, 0x02, 0x01, 0x00,
+        0x07, 0x07, 0x01, 0x03, 0x72, 0x75, 0x6E, 0x00, 0x01,
+        0x0A, 0x0E, 0x01, 0x0C, 0x00, 0x20, 0x00, 0x20, 0x01, 0x20, 0x02, 0x20, 0x03, 0x10, 0x00, 0x0B,
     };
 
     [Test]
@@ -96,5 +113,35 @@ public sealed class WasmtimeRuntimeTests
         var result = await instance.InvokeAsync("answer_plus_one").ConfigureAwait(false);
 
         Assert.That(Convert.ToInt32(result), Is.EqualTo(42));
+    }
+
+    [Test]
+    public async Task HostImportReceivesArgumentsWithTheirWasmTypes()
+    {
+        using var runtime = new WasmtimeWasmRuntime();
+        using var module = await runtime.CompileAsync(HostImportArgumentsModule).ConfigureAwait(false);
+        var types = new[] { WasmValueType.Int32, WasmValueType.Int64, WasmValueType.Float32, WasmValueType.Float64 };
+        IReadOnlyList<object?>? received = null;
+
+        var imports = new[]
+        {
+            new WasmImportFunction(
+                "host",
+                "echo",
+                types,
+                Array.Empty<WasmValueType>(),
+                arguments =>
+                {
+                    received = arguments;
+                    return null;
+                }),
+        };
+
+        using var instance = await runtime.InstantiateAsync(module, imports).ConfigureAwait(false);
+        await instance.InvokeAsync("run", new object?[] { 7, 9007199254740993L, 1.5f, 2.25 }).ConfigureAwait(false);
+
+        Assert.That(received, Is.EqualTo(new object?[] { 7, 9007199254740993L, 1.5f, 2.25 }));
+        Assert.That(received!.Select(argument => argument?.GetType()),
+            Is.EqualTo(new[] { typeof(int), typeof(long), typeof(float), typeof(double) }));
     }
 }
