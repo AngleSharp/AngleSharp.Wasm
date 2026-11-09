@@ -1,6 +1,6 @@
 # 1.1.1
 
-- Added `WasmtimeWasmRuntimeOptions` to limit memory size, table elements and fuel per call @michaelthyregod
+- Added `WasmtimeWasmRuntimeOptions` to limit memory size, table elements and fuel per call (#19) @michaelthyregod
 
 # 1.1.0
 
