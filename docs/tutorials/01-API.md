@@ -18,6 +18,30 @@ Registers the default Wasmtime-backed runtime factory.
 var config = Configuration.Default.WithWasm();
 ```
 
+### `WithWasm(WasmRuntimeOptions)`
+
+Registers the default Wasmtime-backed runtime factory with resource limits. Every limit is off by
+default; set them when pages with untrusted WebAssembly are loaded.
+
+```cs
+var config = Configuration.Default.WithWasm(new WasmRuntimeOptions
+{
+    MaximumMemorySize = 64 * 1024 * 1024, // bytes per linear memory
+    MaximumTableElements = 10_000,        // elements per table
+    Fuel = 100_000_000,                   // per call from the host and per instantiation
+});
+```
+
+- `MaximumMemorySize` and `MaximumTableElements` make instantiation fail when a memory or table
+  starts larger, and make growing beyond them fail.
+- `Fuel` is roughly one unit per executed WebAssembly instruction. A call that spends it traps,
+  which the bridge reports as `RuntimeError`; the next call gets a full budget again. Calls that
+  WebAssembly makes back into its own instance through a host import share the outer call's budget.
+  Fuel metering slows execution down, so it is only enabled when `Fuel` is set.
+
+The same options can be passed to `new WasmtimeWasmRuntime(options)` and
+`new WasmtimeWasmRuntimeFactory(options)`.
+
 ### `WithWasm(Func<IBrowsingContext, IWasmRuntimeFactory>)`
 
 Registers a custom runtime factory creator.

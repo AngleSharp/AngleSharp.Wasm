@@ -14,14 +14,39 @@ using Wasmtime;
 public sealed class WasmtimeWasmRuntime : IWasmRuntime, IWasmValidator
 {
     private readonly Engine _engine;
+    private readonly long? _maximumMemorySize;
+    private readonly uint? _maximumTableElements;
+    private readonly ulong? _fuel;
     private bool _disposed;
 
     /// <summary>
-    /// Creates a new runtime.
+    /// Creates a new runtime without resource limits.
     /// </summary>
     public WasmtimeWasmRuntime()
+        : this(new WasmRuntimeOptions())
     {
-        _engine = new Engine();
+    }
+
+    /// <summary>
+    /// Creates a new runtime with the given resource limits.
+    /// </summary>
+    /// <param name="options">The resource limits. The values are read once, here.</param>
+    public WasmtimeWasmRuntime(WasmRuntimeOptions options)
+    {
+        if (options is null)
+        {
+            throw new ArgumentNullException(nameof(options));
+        }
+
+        if (options.MaximumMemorySize < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), "MaximumMemorySize must not be negative.");
+        }
+
+        _maximumMemorySize = options.MaximumMemorySize;
+        _maximumTableElements = options.MaximumTableElements;
+        _fuel = options.Fuel;
+        _engine = _fuel is null ? new Engine() : new Engine(new Config().WithFuelConsumption(true));
     }
 
     /// <inheritdoc />
@@ -58,17 +83,31 @@ public sealed class WasmtimeWasmRuntime : IWasmRuntime, IWasmValidator
         var linker = new Linker(wasmtimeModule.Engine);
         var store = new Store(wasmtimeModule.Engine);
 
-        if (imports is not null)
+        try
         {
-            foreach (var import in imports)
+            if (_maximumMemorySize is not null || _maximumTableElements is not null)
             {
-                BindImport(linker, import);
+                store.SetLimits(_maximumMemorySize, _maximumTableElements, null, null, null);
             }
+
+            if (imports is not null)
+            {
+                foreach (var import in imports)
+                {
+                    BindImport(linker, import);
+                }
+            }
+
+            var context = new WasmtimeStoreContext(store, _fuel);
+            var instance = context.Run(static state => state.Linker.Instantiate(state.Store, state.Module), (Linker: linker, Store: store, wasmtimeModule.Module));
+
+            return ValueTask.FromResult<IWasmInstance>(new WasmtimeInstance(context, instance));
         }
-
-        var instance = linker.Instantiate(store, wasmtimeModule.Module);
-
-        return ValueTask.FromResult<IWasmInstance>(new WasmtimeInstance(store, instance));
+        catch
+        {
+            store.Dispose();
+            throw;
+        }
     }
 
     /// <inheritdoc />

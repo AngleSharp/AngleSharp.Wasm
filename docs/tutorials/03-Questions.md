@@ -63,6 +63,12 @@ Current numeric value kinds are supported:
 - `f32`
 - `f64`
 
+## How do I limit what a module can consume?
+
+By default a module can grow its memory and tables up to the WebAssembly maximum and run for as
+long as it likes. Pass `WasmRuntimeOptions` to `WithWasm(...)` to cap memory size, table
+elements and fuel (executed instructions per call); see the API page.
+
 ## What are known limitations today?
 
 - No Promise-based `compile` / `instantiate` bridge methods.
