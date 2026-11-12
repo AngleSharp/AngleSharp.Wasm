@@ -5,10 +5,12 @@ using Wasmtime;
 
 internal sealed class WasmtimeTable : IWasmTable
 {
+    private readonly WasmtimeStoreContext _context;
     private readonly Table _table;
 
-    internal WasmtimeTable(Table table)
+    internal WasmtimeTable(WasmtimeStoreContext context, Table table)
     {
+        _context = context;
         _table = table;
     }
 
@@ -20,10 +22,10 @@ internal sealed class WasmtimeTable : IWasmTable
 
     public ulong Grow(uint delta, object? value) => _table.Grow(delta, Unwrap(value));
 
-    private static object? Wrap(object? value) => value switch
+    private object? Wrap(object? value) => value switch
     {
         Function { IsNull: true } => null,
-        Function function => new WasmtimeFunction(function),
+        Function function => new WasmtimeFunction(_context, function),
         _ => value,
     };
 

@@ -1,3 +1,11 @@
+# 1.1.1
+
+Released on Thursday, November 12 2026.
+
+- Fixed host import arguments arriving as `double` instead of their WebAssembly types (#18) @michaelthyregod
+- Added trimming and Native AOT compatibility (`IsAotCompatible`) for the .NET 8 and .NET 10 targets (#17) @michaelthyregod
+- Added `WasmRuntimeOptions` to limit memory size, table elements and fuel per call (#19) @michaelthyregod
+
 # 1.1.0
 
 Released on Friday, August 21 2026.

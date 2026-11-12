@@ -18,6 +18,22 @@ public static class WasmConfigurationExtensions
         configuration.WithWasm(context => new WasmtimeWasmRuntimeFactory());
 
     /// <summary>
+    /// Registers the default Wasmtime-backed WebAssembly runtime factory with resource limits.
+    /// </summary>
+    /// <param name="configuration">The configuration.</param>
+    /// <param name="options">The resource limits.</param>
+    /// <returns>The updated configuration.</returns>
+    public static IConfiguration WithWasm(this IConfiguration configuration, WasmRuntimeOptions options)
+    {
+        if (options is null)
+        {
+            throw new ArgumentNullException(nameof(options));
+        }
+
+        return configuration.WithWasm(context => new WasmtimeWasmRuntimeFactory(options));
+    }
+
+    /// <summary>
     /// Registers a custom WebAssembly runtime factory.
     /// </summary>
     /// <param name="configuration">The configuration.</param>
