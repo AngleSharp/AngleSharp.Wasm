@@ -5,6 +5,7 @@ Thanks :heart: to all who contributed to AngleSharp.Wasm via issues, pull reques
 AngleSharp.Wasm contains code written by (in order of first pull request / commit):
 
 * [Florian Rappl](https://github.com/FlorianRappl)
+* [Michael Thyregod](https://github.com/michaelthyregod)
 
 Without these awesome people AngleSharp.Wasm could not exist. Thanks to everyone for your contributions! :beers:
 
