@@ -1,10 +1,11 @@
 namespace AngleSharp.Wasm;
 
 /// <summary>
-/// Optional resource limits for <see cref="WasmtimeWasmRuntime"/>. Every limit is off by
-/// default; set them when the runtime executes modules from untrusted content.
+/// Optional resource limits for a WebAssembly runtime, honored by the default
+/// <see cref="WasmtimeWasmRuntime"/>. Every limit is off by default; set them when the runtime
+/// executes modules from untrusted content.
 /// </summary>
-public sealed class WasmtimeWasmRuntimeOptions
+public sealed class WasmRuntimeOptions
 {
     /// <summary>
     /// Gets or sets the maximum size in bytes that a single linear memory may have. Instantiating

@@ -68,7 +68,7 @@ public sealed class WasmtimeRuntimeLimitsTests
     [Test]
     public async Task FuelStopsAnEndlessLoopAndIsRefilledForTheNextCall()
     {
-        using var runtime = new WasmtimeWasmRuntime(new WasmtimeWasmRuntimeOptions { Fuel = 10_000 });
+        using var runtime = new WasmtimeWasmRuntime(new WasmRuntimeOptions { Fuel = 10_000 });
         using var module = await runtime.CompileAsync(SpinModule).ConfigureAwait(false);
         using var instance = await runtime.InstantiateAsync(module).ConfigureAwait(false);
 
@@ -80,7 +80,7 @@ public sealed class WasmtimeRuntimeLimitsTests
     [Test]
     public async Task FuelAppliesToExportedFunctionsObtainedFromTheInstance()
     {
-        using var runtime = new WasmtimeWasmRuntime(new WasmtimeWasmRuntimeOptions { Fuel = 10_000 });
+        using var runtime = new WasmtimeWasmRuntime(new WasmRuntimeOptions { Fuel = 10_000 });
         using var module = await runtime.CompileAsync(SpinModule).ConfigureAwait(false);
         using var instance = await runtime.InstantiateAsync(module).ConfigureAwait(false);
         var functions = (IWasmFunctionProvider)instance;
@@ -92,7 +92,7 @@ public sealed class WasmtimeRuntimeLimitsTests
     [Test]
     public async Task ReenteringTheInstanceFromAHostImportDoesNotRefillTheFuel()
     {
-        using var runtime = new WasmtimeWasmRuntime(new WasmtimeWasmRuntimeOptions { Fuel = 10_000 });
+        using var runtime = new WasmtimeWasmRuntime(new WasmRuntimeOptions { Fuel = 10_000 });
         using var module = await runtime.CompileAsync(ReenteringSpinModule).ConfigureAwait(false);
         IWasmInstance? self = null;
         var reentries = 0;
@@ -122,7 +122,7 @@ public sealed class WasmtimeRuntimeLimitsTests
     [Test]
     public async Task MaximumMemorySizeStopsGrowthAndLargerInitialMemory()
     {
-        using var runtime = new WasmtimeWasmRuntime(new WasmtimeWasmRuntimeOptions { MaximumMemorySize = 2 * PageSize });
+        using var runtime = new WasmtimeWasmRuntime(new WasmRuntimeOptions { MaximumMemorySize = 2 * PageSize });
         using var module = await runtime.CompileAsync(OnePageMemoryModule).ConfigureAwait(false);
         using var instance = await runtime.InstantiateAsync(module).ConfigureAwait(false);
         var memory = ((IWasmMemoryProvider)instance).GetMemory("mem")!;
@@ -138,7 +138,7 @@ public sealed class WasmtimeRuntimeLimitsTests
     [Test]
     public async Task MaximumTableElementsStopsGrowth()
     {
-        using var runtime = new WasmtimeWasmRuntime(new WasmtimeWasmRuntimeOptions { MaximumTableElements = 2 });
+        using var runtime = new WasmtimeWasmRuntime(new WasmRuntimeOptions { MaximumTableElements = 2 });
         using var module = await runtime.CompileAsync(OneElementTableModule).ConfigureAwait(false);
         using var instance = await runtime.InstantiateAsync(module).ConfigureAwait(false);
         var table = ((IWasmTableProvider)instance).GetTable("tab")!;
@@ -152,14 +152,14 @@ public sealed class WasmtimeRuntimeLimitsTests
     public void NegativeMaximumMemorySizeIsRejected()
     {
         Assert.That(
-            () => new WasmtimeWasmRuntime(new WasmtimeWasmRuntimeOptions { MaximumMemorySize = -1 }),
+            () => new WasmtimeWasmRuntime(new WasmRuntimeOptions { MaximumMemorySize = -1 }),
             Throws.InstanceOf<ArgumentOutOfRangeException>());
     }
 
     [Test]
     public async Task BridgeReportsSpentFuelAsRuntimeError()
     {
-        var config = Configuration.Default.WithWasm(new WasmtimeWasmRuntimeOptions { Fuel = 10_000 });
+        var config = Configuration.Default.WithWasm(new WasmRuntimeOptions { Fuel = 10_000 });
         using var context = BrowsingContext.New(config);
         using var document = await context.OpenNewAsync();
 

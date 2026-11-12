@@ -23,7 +23,7 @@ public static class WasmConfigurationExtensions
     /// <param name="configuration">The configuration.</param>
     /// <param name="options">The resource limits.</param>
     /// <returns>The updated configuration.</returns>
-    public static IConfiguration WithWasm(this IConfiguration configuration, WasmtimeWasmRuntimeOptions options)
+    public static IConfiguration WithWasm(this IConfiguration configuration, WasmRuntimeOptions options)
     {
         if (options is null)
         {

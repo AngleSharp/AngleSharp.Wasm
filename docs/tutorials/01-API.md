@@ -18,13 +18,13 @@ Registers the default Wasmtime-backed runtime factory.
 var config = Configuration.Default.WithWasm();
 ```
 
-### `WithWasm(WasmtimeWasmRuntimeOptions)`
+### `WithWasm(WasmRuntimeOptions)`
 
 Registers the default Wasmtime-backed runtime factory with resource limits. Every limit is off by
 default; set them when pages with untrusted WebAssembly are loaded.
 
 ```cs
-var config = Configuration.Default.WithWasm(new WasmtimeWasmRuntimeOptions
+var config = Configuration.Default.WithWasm(new WasmRuntimeOptions
 {
     MaximumMemorySize = 64 * 1024 * 1024, // bytes per linear memory
     MaximumTableElements = 10_000,        // elements per table

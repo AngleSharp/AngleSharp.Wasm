@@ -7,13 +7,13 @@ using System;
 /// </summary>
 public sealed class WasmtimeWasmRuntimeFactory : IWasmRuntimeFactory
 {
-    private readonly WasmtimeWasmRuntimeOptions _options;
+    private readonly WasmRuntimeOptions _options;
 
     /// <summary>
     /// Creates a factory for runtimes without resource limits.
     /// </summary>
     public WasmtimeWasmRuntimeFactory()
-        : this(new WasmtimeWasmRuntimeOptions())
+        : this(new WasmRuntimeOptions())
     {
     }
 
@@ -21,7 +21,7 @@ public sealed class WasmtimeWasmRuntimeFactory : IWasmRuntimeFactory
     /// Creates a factory for runtimes with the given resource limits.
     /// </summary>
     /// <param name="options">The resource limits, read by every runtime this factory creates.</param>
-    public WasmtimeWasmRuntimeFactory(WasmtimeWasmRuntimeOptions options)
+    public WasmtimeWasmRuntimeFactory(WasmRuntimeOptions options)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
     }

@@ -23,7 +23,7 @@ public sealed class WasmtimeWasmRuntime : IWasmRuntime, IWasmValidator
     /// Creates a new runtime without resource limits.
     /// </summary>
     public WasmtimeWasmRuntime()
-        : this(new WasmtimeWasmRuntimeOptions())
+        : this(new WasmRuntimeOptions())
     {
     }
 
@@ -31,7 +31,7 @@ public sealed class WasmtimeWasmRuntime : IWasmRuntime, IWasmValidator
     /// Creates a new runtime with the given resource limits.
     /// </summary>
     /// <param name="options">The resource limits. The values are read once, here.</param>
-    public WasmtimeWasmRuntime(WasmtimeWasmRuntimeOptions options)
+    public WasmtimeWasmRuntime(WasmRuntimeOptions options)
     {
         if (options is null)
         {
