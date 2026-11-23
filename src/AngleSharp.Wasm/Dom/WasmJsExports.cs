@@ -9,18 +9,22 @@ using AngleSharp.Attributes;
 /// JavaScript-visible exports object.
 /// </summary>
 [DomName("Exports")]
+[DomNoInterfaceObject]
 public sealed class WasmJsExports
 {
     private readonly IReadOnlyDictionary<string, object> _entries;
 
     internal WasmJsExports(WasmJsInstance owner, IReadOnlyList<WasmModuleExportDescriptor> exportsMetadata)
     {
+        Metadata = exportsMetadata;
         var tags = new Dictionary<uint, WasmJsTag>();
         _entries = exportsMetadata
             .ToDictionary(
                 m => m.Name,
                 m => CreateExport(owner, m, tags));
     }
+
+    internal IReadOnlyList<WasmModuleExportDescriptor> Metadata { get; }
 
     private static object CreateExport(
         WasmJsInstance owner,

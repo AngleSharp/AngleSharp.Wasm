@@ -7,6 +7,7 @@ using System;
 /// JavaScript-visible exported function wrapper.
 /// </summary>
 [DomName("ExportedFunction")]
+[DomNoInterfaceObject]
 public sealed class WasmJsExportedFunction
 {
     private readonly WasmJsInstance? _owner;

@@ -1,3 +1,12 @@
+# 1.2.0
+
+Released on tbd.
+
+- Updated `WebAssembly` to no longer appear as members or global members
+- Added the WebAssembly JavaScript API as in browsers for scripts
+- Added `memory.buffer` sharing the bytes of the memory with scripts
+- Added import objects of scripts
+
 # 1.1.1
 
 Released on Thursday, November 12 2026.

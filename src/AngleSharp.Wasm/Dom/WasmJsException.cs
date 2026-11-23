@@ -8,6 +8,7 @@ using System.Globalization;
 /// JavaScript-visible WebAssembly exception.
 /// </summary>
 [DomName("Exception")]
+[DomExposed("WebAssembly")]
 public sealed class WasmJsException : Exception
 {
     private readonly WasmJsTag _tag;

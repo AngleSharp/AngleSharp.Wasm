@@ -6,6 +6,7 @@ using AngleSharp.Attributes;
 /// Contains a compiled module and its instantiated instance.
 /// </summary>
 [DomName("WebAssemblyInstantiatedSource")]
+[DomNoInterfaceObject]
 public sealed class WasmJsInstantiationResult
 {
     internal WasmJsInstantiationResult(WasmJsModule module, WasmJsInstance instance)

@@ -5,16 +5,19 @@ using AngleSharp.Dom;
 using AngleSharp.Io;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 /// <summary>
-/// Minimal JavaScript bridge object exposed as WebAssembly in compatible JS engines.
+/// The WebAssembly namespace of the JavaScript API: compiling and instantiating modules, which
+/// gives promises, and the interfaces of its objects (WebAssembly.Module, Instance, Memory, ...).
 /// </summary>
 [DomName("WebAssembly")]
-[DomNoInterfaceObject]
 [DomExposed("Window")]
 public static class WebAssembly
 {
@@ -62,7 +65,6 @@ public static class WebAssembly
     /// <param name="window">The host.</param>
     /// <param name="source">The response containing the module.</param>
     /// <returns>The compiled module.</returns>
-    [DomName("compileStreaming")]
     public static WasmJsModule CompileStreaming(this IWindow window, IResponse source) =>
         CompileStreaming(window, source, null);
 
@@ -73,7 +75,6 @@ public static class WebAssembly
     /// <param name="source">The response containing the module.</param>
     /// <param name="options">The compile options.</param>
     /// <returns>The compiled module.</returns>
-    [DomName("compileStreaming")]
     public static WasmJsModule CompileStreaming(this IWindow window, IResponse source, WasmCompileOptions? options) =>
         Compile(window, ReadStreamingSource(source), options);
 
@@ -83,7 +84,6 @@ public static class WebAssembly
     /// <param name="window">The host.</param>
     /// <param name="source">The response containing the module.</param>
     /// <returns>The compiled module and instance.</returns>
-    [DomName("instantiateStreaming")]
     public static WasmJsInstantiationResult InstantiateStreaming(this IWindow window, IResponse source)
         => InstantiateStreaming(window, source, null);
 
@@ -94,7 +94,6 @@ public static class WebAssembly
     /// <param name="source">The response containing the module.</param>
     /// <param name="options">The compile options.</param>
     /// <returns>The compiled module and instance.</returns>
-    [DomName("instantiateStreaming")]
     public static WasmJsInstantiationResult InstantiateStreaming(
         this IWindow window,
         IResponse source,
@@ -111,7 +110,6 @@ public static class WebAssembly
     /// <param name="window">The host.</param>
     /// <param name="moduleBytes">The module bytes.</param>
     /// <returns>The compiled module and instance.</returns>
-    [DomName("instantiate")]
     public static WasmJsInstantiationResult Instantiate(this IWindow window, byte[] moduleBytes) =>
         Instantiate(window, moduleBytes, null);
 
@@ -122,7 +120,6 @@ public static class WebAssembly
     /// <param name="moduleBytes">The module bytes.</param>
     /// <param name="options">The compile options.</param>
     /// <returns>The compiled module and instance.</returns>
-    [DomName("instantiate")]
     public static WasmJsInstantiationResult Instantiate(
         this IWindow window,
         byte[] moduleBytes,
@@ -139,7 +136,6 @@ public static class WebAssembly
     /// <param name="window">The host.</param>
     /// <param name="moduleBytes">The module bytes.</param>
     /// <returns>The module handle.</returns>
-    [DomName("compile")]
     public static WasmJsModule Compile(this IWindow window, byte[] moduleBytes)
         => Compile(window, moduleBytes, null);
 
@@ -150,7 +146,6 @@ public static class WebAssembly
     /// <param name="moduleBytes">The module bytes.</param>
     /// <param name="options">The compile options.</param>
     /// <returns>The module handle.</returns>
-    [DomName("compile")]
     public static WasmJsModule Compile(this IWindow window, byte[] moduleBytes, WasmCompileOptions? options)
     {
         if (moduleBytes is null)
@@ -192,7 +187,6 @@ public static class WebAssembly
     /// <param name="window">The host.</param>
     /// <param name="module">The compiled module handle.</param>
     /// <returns>The instance handle.</returns>
-    [DomName("instantiate")]
     public static WasmJsInstance Instantiate(this IWindow window, WasmJsModule module)
     {
         if (module is null)
@@ -211,6 +205,138 @@ public static class WebAssembly
             throw new WasmJsLinkError(exception.Message, exception);
         }
     }
+
+    /// <summary>
+    /// Compiles a module (WebAssembly.compile), which rejects with a CompileError if the bytes
+    /// are no valid module.
+    /// </summary>
+    /// <param name="window">The host.</param>
+    /// <param name="bytes">The bytes of the module.</param>
+    /// <returns>The module.</returns>
+    [DomName("compile")]
+    public static Task<WasmJsModule> CompileAsync(this IWindow window, byte[] bytes) =>
+        Settle(() => Compile(window, bytes));
+
+    /// <summary>
+    /// Compiles and instantiates a module (WebAssembly.instantiate).
+    /// </summary>
+    /// <param name="window">The host.</param>
+    /// <param name="bytes">The bytes of the module.</param>
+    /// <param name="importObject">What the module imports, by module and name.</param>
+    /// <returns>The module and its instance.</returns>
+    [DomName("instantiate")]
+    public static Task<WasmJsInstantiationResult> InstantiateAsync(this IWindow window, byte[] bytes, IDictionary<string, IDictionary<string, WasmJsImportValue>>? importObject = null) =>
+        Settle(() =>
+        {
+            var module = Compile(window, bytes);
+            return new WasmJsInstantiationResult(module, InstantiateCore(window, module, importObject));
+        });
+
+    /// <summary>
+    /// Instantiates a compiled module (WebAssembly.instantiate).
+    /// </summary>
+    /// <param name="window">The host.</param>
+    /// <param name="module">The module.</param>
+    /// <param name="importObject">What the module imports, by module and name.</param>
+    /// <returns>The instance.</returns>
+    [DomName("instantiate")]
+    public static Task<WasmJsInstance> InstantiateAsync(this IWindow window, WasmJsModule module, IDictionary<string, IDictionary<string, WasmJsImportValue>>? importObject = null) =>
+        Settle(() => InstantiateCore(window, module, importObject));
+
+    /// <summary>
+    /// Compiles the module of a response (WebAssembly.compileStreaming), e.g. of fetch().
+    /// </summary>
+    /// <param name="window">The host.</param>
+    /// <param name="source">The response, or a promise of it.</param>
+    /// <returns>The module.</returns>
+    [DomName("compileStreaming")]
+    public static async Task<WasmJsModule> CompileStreamingAsync(this IWindow window, Task<object> source) =>
+        Compile(window, await ReadResponseAsync(await source));
+
+    /// <summary>
+    /// Compiles and instantiates the module of a response (WebAssembly.instantiateStreaming).
+    /// </summary>
+    /// <param name="window">The host.</param>
+    /// <param name="source">The response, or a promise of it.</param>
+    /// <param name="importObject">What the module imports, by module and name.</param>
+    /// <returns>The module and its instance.</returns>
+    [DomName("instantiateStreaming")]
+    public static async Task<WasmJsInstantiationResult> InstantiateStreamingAsync(this IWindow window, Task<object> source, IDictionary<string, IDictionary<string, WasmJsImportValue>>? importObject = null)
+    {
+        var module = Compile(window, await ReadResponseAsync(await source));
+        return new WasmJsInstantiationResult(module, InstantiateCore(window, module, importObject));
+    }
+
+    internal static WasmJsInstance InstantiateCore(IWindow window, WasmJsModule module, IDictionary<string, IDictionary<string, WasmJsImportValue>>? importObject)
+    {
+        if (module is null)
+        {
+            throw new ArgumentNullException(nameof(module));
+        }
+
+        return GetRealm(window).Instantiate(module, importObject);
+    }
+
+    internal static WasmJsRealm GetRealm(IWindow window) => WasmJsRealm.Of(window, GetOrCreateRuntime(window));
+
+    //  The work is done right away, but a failure rejects the promise rather than throwing.
+    private static Task<T> Settle<T>(Func<T> action)
+    {
+        try
+        {
+            return Task.FromResult(action());
+        }
+        catch (Exception exception)
+        {
+            return Task.FromException<T>(exception);
+        }
+    }
+
+    //  A Response of a fetch(), known by the names of its members (it is AngleSharp.Io's), or
+    //  a response of AngleSharp.
+    [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = "The members of a response are those of a DOM object, which the scripting keeps.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "The members of a response are those of a DOM object, which the scripting keeps.")]
+    private static async Task<byte[]> ReadResponseAsync(object? source)
+    {
+        if (source is IResponse response)
+        {
+            return ReadStreamingSource(response);
+        }
+
+        var type = source?.GetType() ?? throw new ArgumentException("The source has to be a Response.");
+        var ok = FindMember(type, "ok") as PropertyInfo;
+        var headers = (FindMember(type, "headers") as PropertyInfo)?.GetValue(source);
+        var get = headers is null ? null : FindMember(headers.GetType(), "get") as MethodInfo;
+        var arrayBuffer = FindMember(type, "arrayBuffer") as MethodInfo
+            ?? throw new ArgumentException("The source has to be a Response.");
+
+        if (ok?.GetValue(source) is false)
+        {
+            throw new ArgumentException("The response of the module was not successful.");
+        }
+
+        var contentType = get?.Invoke(headers, new object?[] { "Content-Type" }) as string;
+
+        if (contentType is null || !String.Equals(contentType.Split(';', 2)[0].Trim(), "application/wasm", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException("The response of the module has to be of the type application/wasm.");
+        }
+
+        var reading = (Task)arrayBuffer.Invoke(source, Array.Empty<object?>())!;
+        await reading.ConfigureAwait(false);
+        return reading.GetType().GetProperty(nameof(Task<object>.Result))?.GetValue(reading) switch
+        {
+            byte[] bytes => bytes,
+            ArraySegment<byte> segment => segment.ToArray(),
+            _ => throw new ArgumentException("The body of the response could not be read."),
+        };
+    }
+
+    [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = "The members of a response are those of a DOM object, which the scripting keeps.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "The members of a response are those of a DOM object, which the scripting keeps.")]
+    private static MemberInfo? FindMember(Type type, string name) =>
+        type.GetMembers(BindingFlags.Public | BindingFlags.Instance)
+            .FirstOrDefault(member => member.GetCustomAttributes<DomNameAttribute>().Any(attribute => attribute.OfficialName == name));
 
     private static IWasmRuntime GetOrCreateRuntime(IWindow window) =>
         runtimeCache.GetValue(window.Document?.Context!, static context =>

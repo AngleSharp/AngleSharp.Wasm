@@ -54,16 +54,24 @@ var config = Configuration.Default
 
 ## DOM / JS Integration
 
-When using a scripting setup that discovers DOM-annotated members (for example, AngleSharp.Js with registered assemblies), AngleSharp.Wasm exposes a WebAssembly surface under `window.WebAssembly`.
+With AngleSharp.Js, scripts get the WebAssembly JavaScript API as in browsers:
 
-Available bridge capabilities include:
+```js
+const memory = new WebAssembly.Memory({ initial: 1 });
+const { instance } = await WebAssembly.instantiateStreaming(fetch('program.wasm'), {
+  env: { memory, log: (value) => console.log(value) },
+});
+new Uint8Array(memory.buffer)[0] = 42;
+instance.exports.run();
+```
 
-- Compile module bytes
-- Instantiate compiled modules
-- Inspect module imports / exports / custom sections
-- Access instance exports and invoke exported functions
+- `WebAssembly` is a namespace object with `validate`, `compile`, `instantiate`, `compileStreaming` and `instantiateStreaming` (giving promises) and the interfaces `Module`, `Instance`, `Memory`, `Table`, `Global`, `Tag`, `Exception`, `CompileError`, `LinkError` and `RuntimeError`.
+- Import objects take functions of scripts, numbers and BigInts (for globals), and memories, tables and globals; `instance.exports` holds functions scripts call and the objects of memories, tables and globals.
+- `memory.buffer` is an ArrayBuffer sharing the bytes of the memory (the default Wasmtime backend keeps the memories in pinned .NET arrays), so writes of scripts and of WebAssembly see each other.
 
-Typical flow:
+The objects of a browsing context live in one Wasmtime store, so they can be imported by any of its modules.
+
+For C#, the synchronous bridge methods remain:
 
 ```cs
 var module = WebAssembly.Compile(context.Current!, wasmBytes);
@@ -110,9 +118,9 @@ The current package targets `net8.0` and `net10.0`.
 
 AngleSharp.Wasm currently provides a practical subset of the WebAssembly JS API.
 
-- Bridge methods are synchronous from the caller perspective.
-- Promise-based namespace operations are not currently exposed.
-- Streaming APIs synchronously buffer AngleSharp response streams because module metadata requires the complete binary.
+- Streaming APIs read the whole response before compiling, because module metadata requires the complete binary.
+- Shared memories (`shared: true`) are not supported.
+- The JavaScript API needs the default Wasmtime backend; custom runtimes are used by the C# bridge methods.
 - Compile options are validated and forwarded to capable runtimes. Wasmtime 44 does not expose JavaScript string builtins or imported string constants, so requesting either option with the default backend throws `NotSupportedException`.
 - Exported memories, tables, globals, and tags have object projections; other non-function exports remain descriptors (`name`, `kind`).
 - Host-created tags and exceptions are supported. Wasmtime 44 does not expose native Tag or Exception handles or enable exception modules through its .NET API, so runtime-thrown Wasm exceptions are not yet projected.

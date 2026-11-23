@@ -7,6 +7,7 @@ using System;
 /// Represents a WebAssembly compilation failure.
 /// </summary>
 [DomName("CompileError")]
+[DomExposed("WebAssembly")]
 public sealed class WasmJsCompileError : Exception
 {
     /// <summary>
@@ -27,6 +28,7 @@ public sealed class WasmJsCompileError : Exception
     /// <summary>
     /// Creates a compilation error with a message.
     /// </summary>
+    [DomConstructor]
     public WasmJsCompileError(string? message)
         : base(message)
     {
@@ -42,6 +44,7 @@ public sealed class WasmJsCompileError : Exception
 /// Represents a WebAssembly instantiation or linking failure.
 /// </summary>
 [DomName("LinkError")]
+[DomExposed("WebAssembly")]
 public sealed class WasmJsLinkError : Exception
 {
     /// <summary>
@@ -62,6 +65,7 @@ public sealed class WasmJsLinkError : Exception
     /// <summary>
     /// Creates a linking error with a message.
     /// </summary>
+    [DomConstructor]
     public WasmJsLinkError(string? message)
         : base(message)
     {
@@ -77,6 +81,7 @@ public sealed class WasmJsLinkError : Exception
 /// Represents a WebAssembly execution failure.
 /// </summary>
 [DomName("RuntimeError")]
+[DomExposed("WebAssembly")]
 public sealed class WasmJsRuntimeError : Exception
 {
     /// <summary>
@@ -97,6 +102,7 @@ public sealed class WasmJsRuntimeError : Exception
     /// <summary>
     /// Creates a runtime error with a message.
     /// </summary>
+    [DomConstructor]
     public WasmJsRuntimeError(string? message)
         : base(message)
     {

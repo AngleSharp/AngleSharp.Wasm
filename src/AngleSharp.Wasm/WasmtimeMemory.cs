@@ -7,6 +7,8 @@ internal sealed class WasmtimeMemory : IWasmMemory
 {
     private readonly Memory _memory;
 
+    internal Memory Native => _memory;
+
     public WasmtimeMemory(Memory memory)
     {
         _memory = memory;

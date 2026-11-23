@@ -9,6 +9,8 @@ internal sealed class WasmtimeGlobal : IWasmGlobal
     private readonly WasmtimeStoreContext _context;
     private readonly Global _global;
 
+    internal Global Native => _global;
+
     internal WasmtimeGlobal(WasmtimeStoreContext context, Global global)
     {
         _context = context;

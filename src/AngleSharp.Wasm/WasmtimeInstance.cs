@@ -13,6 +13,10 @@ public sealed class WasmtimeInstance : IWasmInstance, IWasmFunctionProvider, IWa
 {
     private readonly WasmtimeStoreContext _context;
     private readonly Instance _instance;
+
+    internal Instance Native => _instance;
+
+    internal WasmtimeStoreContext Context => _context;
     private bool _disposed;
 
     internal WasmtimeInstance(WasmtimeStoreContext context, Instance instance)

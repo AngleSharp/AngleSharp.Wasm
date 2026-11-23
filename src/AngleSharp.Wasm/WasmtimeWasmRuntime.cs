@@ -46,7 +46,40 @@ public sealed class WasmtimeWasmRuntime : IWasmRuntime, IWasmValidator
         _maximumMemorySize = options.MaximumMemorySize;
         _maximumTableElements = options.MaximumTableElements;
         _fuel = options.Fuel;
-        _engine = _fuel is null ? new Engine() : new Engine(new Config().WithFuelConsumption(true));
+        var config = new Config();
+
+        if (_fuel is not null)
+        {
+            config.WithFuelConsumption(true);
+        }
+
+        // memories in arrays of .NET, which is what scripts get as their buffer
+        HasHostMemory = HostMemory.TryConfigure(config);
+        _engine = new Engine(config);
+    }
+
+    /// <summary>
+    /// Gets if the linear memories are arrays of .NET, so a script's memory.buffer is the memory.
+    /// </summary>
+    internal bool HasHostMemory { get; }
+
+    internal Engine Engine => _engine;
+
+    /// <summary>
+    /// Creates a store with the limits of the runtime, e.g. the one of the objects of the
+    /// WebAssembly API of a browsing context, which are shared by its instances.
+    /// </summary>
+    internal WasmtimeStoreContext CreateStoreContext()
+    {
+        ThrowIfDisposed();
+        var store = new Store(_engine);
+
+        if (_maximumMemorySize is not null || _maximumTableElements is not null)
+        {
+            store.SetLimits(_maximumMemorySize, _maximumTableElements, null, null, null);
+        }
+
+        return new WasmtimeStoreContext(store, _fuel);
     }
 
     /// <inheritdoc />
