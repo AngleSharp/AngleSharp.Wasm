@@ -1,6 +1,6 @@
 # 1.2.0
 
-Released on tbd.
+Released on Monday, November 23 2026.
 
 - Updated `WebAssembly` to no longer appear as members or global members
 - Added the WebAssembly JavaScript API as in browsers for scripts
