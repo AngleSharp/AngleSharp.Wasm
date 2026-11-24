@@ -8,6 +8,8 @@ internal sealed class WasmtimeTable : IWasmTable
     private readonly WasmtimeStoreContext _context;
     private readonly Table _table;
 
+    internal Table Native => _table;
+
     internal WasmtimeTable(WasmtimeStoreContext context, Table table)
     {
         _context = context;

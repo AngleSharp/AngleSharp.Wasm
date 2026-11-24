@@ -6,6 +6,7 @@ using AngleSharp.Attributes;
 /// JavaScript-visible non-function export entry.
 /// </summary>
 [DomName("ExportedValue")]
+[DomNoInterfaceObject]
 public sealed class WasmJsExportValue
 {
     internal WasmJsExportValue(string name, string kind)

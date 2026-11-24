@@ -7,6 +7,7 @@ using System;
 /// JavaScript-visible WebAssembly exception tag.
 /// </summary>
 [DomName("Tag")]
+[DomExposed("WebAssembly")]
 public sealed class WasmJsTag
 {
     private readonly WasmJsTagType _type;
@@ -54,6 +55,7 @@ public sealed class WasmJsTag
 /// Describes a WebAssembly exception tag type.
 /// </summary>
 [DomName("TagType")]
+[DomNoInterfaceObject]
 public sealed class WasmJsTagType
 {
     private readonly string[] _parameters;
